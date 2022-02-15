@@ -7,11 +7,11 @@
 package main
 
 import (
-	"dataCollection/internal/biz"
-	"dataCollection/internal/conf"
-	"dataCollection/internal/data"
-	"dataCollection/internal/server"
-	"dataCollection/internal/service"
+	"gitee.com/moyusir/dataCollection/internal/biz"
+	"gitee.com/moyusir/dataCollection/internal/conf"
+	"gitee.com/moyusir/dataCollection/internal/data"
+	"gitee.com/moyusir/dataCollection/internal/server"
+	"gitee.com/moyusir/dataCollection/internal/service"
 	"github.com/go-kratos/kratos/v2"
 	"github.com/go-kratos/kratos/v2/log"
 )

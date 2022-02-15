@@ -1,0 +1,89 @@
+syntax = "proto3";
+
+package api.util.v1;
+
+option go_package = "gitee.com/moyusir/util/api/util/v1;v1";
+option java_multiple_files = true;
+option java_package = "api.util.v1";
+
+import "google/protobuf/duration.proto";
+// 可选的数据注册类型
+enum Type{
+	DOUBLE=0;
+	INT32=1;
+	INT64=2;
+	UINT32=3;
+	UINT64=4;
+	BOOL=5;
+	STRING=6;
+	BYTE=7;
+}
+// 用户注册信息
+message User{
+	// 用户id
+	string id=1;
+	// 用户密码
+	string password=2;
+}
+// 配置注册信息
+message DeviceConfigRegisterInfo{
+	// 配置注册信息字段
+	message Field{
+		// 配置字段名
+		string name=1;
+		// 配置字段类型
+		Type type=2;
+	}
+	// 单个设备的配置注册信息包含若干配置字段1
+	repeated Field fields = 1;
+}
+// 设备状态注册信息
+message DeviceStateRegisterInfo{
+	// 预警比较方法，用于预警检测时的判断
+	enum Cmp{
+		// 等于
+		EQ=0;
+		// 大于
+		GT=1;
+		// 小于
+		LT=2;
+		// 取平均值
+		AVG=3;
+		// 取最大值
+		MAX=4;
+		// 取最小值
+		MIN=5;
+	}
+	// 预警比较规则，由比较方法和比较参数组成
+	message CmpRule{
+		Cmp cmp=1;
+		// 预警比较方法对应的参数，解析时需对前端传来的arg进行类型检查
+		string arg=2;
+	}
+	// 预警规则信息，预警时依据依据规则定义的比较规则，对指定时间范围内的数据查询，判断是否需要产生警告
+	message WarningRule{
+		// 预警比较规则
+		CmpRule cmp_rule = 1;
+		// 指定的时间范围
+		google.protobuf.Duration duration = 2;
+	}
+	// 设备状态信息注册字段
+	message Field{
+		// 设备状态信息字段名
+		string name=1;
+		// 设备状态信息字段类型
+		Type type=2;
+		// 预警规则
+		WarningRule warning_rule = 3;
+	}
+	repeated Field fields = 1;
+}
+// 警告信息
+message Warning{
+	// 引发告警的设备的id
+	string device_id=1;
+	// 设备名称
+	string device_name=2;
+	// 告警原因
+	string warning_reason=3;
+}
