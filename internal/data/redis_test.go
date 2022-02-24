@@ -45,7 +45,12 @@ func TestRedisRepo(t *testing.T) {
 		}
 	})
 	t.Run("ts_test", func(t *testing.T) {
-		err := redisRepo.SaveDataToTs("ts_test", time.Now(), []byte("test"))
+		err := data.Do(context.Background(), "TS.CREATE", "ts_test").Err()
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		err = redisRepo.SaveDataToTs("ts_test", time.Now(), []byte("test"))
 		if err != nil {
 			t.Error(err)
 		} else {
