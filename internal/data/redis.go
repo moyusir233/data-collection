@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-redis/redis/v8"
-	"time"
 )
 
 type RedisRepo struct {
@@ -43,7 +42,7 @@ func (r *RedisRepo) SaveDataToZset(key string, score float64, value []byte) erro
 	return nil
 }
 
-func (r *RedisRepo) SaveDataToTs(key string, stamp time.Time, value []byte) error {
+func (r *RedisRepo) SaveDataToTs(key string, stamp int64, value []byte) error {
 	v := fmt.Sprintf("%x", value)
 	err := r.client.Do(context.Background(), "TS.ADD", key, stamp, v).Err()
 	if err != nil {
