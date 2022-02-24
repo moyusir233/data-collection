@@ -41,7 +41,7 @@ func (r *RedisRepo) SaveDataToZset(key string, score float64, value []byte) erro
 }
 
 func (r *RedisRepo) SaveDataToTs(key string, stamp time.Time, value []byte) error {
-	err := r.client.Do(context.Background(), "TS.ADD", key, stamp, value).Err()
+	err := r.client.Do(context.Background(), "TS.ADD", key, stamp, "test").Err()
 	if err != nil {
 		return err
 	}
