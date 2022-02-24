@@ -2,6 +2,7 @@ package data
 
 import (
 	"context"
+	"fmt"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-redis/redis/v8"
 	"time"
@@ -22,7 +23,8 @@ func NewRedisRepo(data *Data, logger log.Logger) *RedisRepo {
 
 // SaveDataToHash 保存数据
 func (r *RedisRepo) SaveDataToHash(key, field string, value []byte) error {
-	err := r.client.HSet(context.Background(), key, field, value).Err()
+	v := fmt.Sprintf("%x", value)
+	err := r.client.HSet(context.Background(), key, field, v).Err()
 	if err != nil {
 		return err
 	}
@@ -30,9 +32,10 @@ func (r *RedisRepo) SaveDataToHash(key, field string, value []byte) error {
 }
 
 func (r *RedisRepo) SaveDataToZset(key string, score float64, value []byte) error {
+	v := fmt.Sprintf("%x", value)
 	err := r.client.ZAdd(context.Background(), key, &redis.Z{
 		Score:  score,
-		Member: value,
+		Member: v,
 	}).Err()
 	if err != nil {
 		return err
@@ -41,7 +44,8 @@ func (r *RedisRepo) SaveDataToZset(key string, score float64, value []byte) erro
 }
 
 func (r *RedisRepo) SaveDataToTs(key string, stamp time.Time, value []byte) error {
-	err := r.client.Do(context.Background(), "TS.ADD", key, stamp, "test").Err()
+	v := fmt.Sprintf("%x", value)
+	err := r.client.Do(context.Background(), "TS.ADD", key, stamp, v).Err()
 	if err != nil {
 		return err
 	}

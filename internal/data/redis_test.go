@@ -2,6 +2,7 @@ package data
 
 import (
 	"context"
+	"fmt"
 	"gitee.com/moyusir/dataCollection/internal/conf"
 	"github.com/go-kratos/kratos/v2/config"
 	"github.com/go-kratos/kratos/v2/config/file"
@@ -52,4 +53,11 @@ func TestRedisRepo(t *testing.T) {
 			data.Del(context.Background(), "ts_test")
 		}
 	})
+}
+func TestName(t *testing.T) {
+	tmp := fmt.Sprintf("%x", []byte("test"))
+	fmt.Println(tmp)
+	tmp2 := []byte{}
+	fmt.Sscanf(tmp, "%x", &tmp2)
+	fmt.Println(string(tmp2))
 }
