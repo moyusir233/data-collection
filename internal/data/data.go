@@ -17,10 +17,9 @@ type Data struct {
 	// TODO wrapped database client
 	// redis连接客户端
 	*redis.ClusterClient
-	logger *log.Helper
 }
 
-// NewData .
+// NewData 实例化redis数据库连接对象
 func NewData(c *conf.Data, logger log.Logger) (*Data, func(), error) {
 	data := new(Data)
 	data.ClusterClient = redis.NewFailoverClusterClient(&redis.FailoverOptions{
@@ -34,20 +33,20 @@ func NewData(c *conf.Data, logger log.Logger) (*Data, func(), error) {
 		PoolSize:              int(c.Redis.PoolSize),
 		MinIdleConns:          int(c.Redis.MinIdleConns),
 	})
-	data.logger = log.NewHelper(logger)
+	helper := log.NewHelper(logger)
 
 	if err := data.Ping(context.Background()).Err(); err != nil {
-		data.logger.Errorf("redis数据库连接失败,失败信息:%s\n", err)
+		helper.Errorf("redis数据库连接失败,失败信息:%s\n", err)
 		return nil, nil, err
 	}
 
 	cleanup := func() {
 		err := data.Close()
 		if err != nil {
-			data.logger.Errorf("redis数据库连接关闭失败,失败信息:%s\n", err)
+			helper.Errorf("redis数据库连接关闭失败,失败信息:%s\n", err)
 			return
 		}
-		data.logger.Info("redis数据库连接关闭成功\n")
+		helper.Info("redis数据库连接关闭成功\n")
 	}
 
 	return data, cleanup, nil
