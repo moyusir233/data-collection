@@ -6,10 +6,10 @@ server:
     addr: 0.0.0.0:9000
     timeout: 1s
 data:
-  database:
-    driver: mysql
-    source: root:root@tcp(127.0.0.1:3306)/test
   redis:
-    addr: 127.0.0.1:6379
-    read_timeout: 0.2s
-    write_timeout: 0.2s
+    host: redis.default.svc.cluster.local
+    serverPort: 6379
+    sentinelPort: 26379
+    masterName: mymaster
+    poolSize: 5
+    minIdleConns: 2
