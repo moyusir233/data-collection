@@ -24,4 +24,5 @@ func TestNewData(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer cleanUp()
+	t.Logf("%s测试成功", t.Name())
 }

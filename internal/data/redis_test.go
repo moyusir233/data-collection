@@ -27,7 +27,6 @@ func TestRedisRepo(t *testing.T) {
 	}
 	defer cleanUp()
 	redisRepo := NewRedisRepo(data, log.NewStdLogger(os.Stdout))
-	t.Parallel()
 	t.Run("hash_test", func(t *testing.T) {
 		err := redisRepo.SaveDataToHash("hash_test", "test", []byte("test"))
 		if err != nil {
@@ -52,4 +51,5 @@ func TestRedisRepo(t *testing.T) {
 			data.Del(context.Background(), "ts_test")
 		}
 	})
+	t.Logf("%s测试成功", t.Name())
 }
