@@ -1,11 +1,11 @@
-package biz
+package test
 
 import (
 	"context"
 	"fmt"
+	"gitee.com/moyusir/dataCollection/internal/biz"
 	"gitee.com/moyusir/dataCollection/internal/conf"
 	"gitee.com/moyusir/dataCollection/internal/data"
-	"gitee.com/moyusir/dataCollection/internal/test"
 	v1 "gitee.com/moyusir/util/api/util/v1"
 	"github.com/go-kratos/kratos/v2/log"
 	"google.golang.org/protobuf/proto"
@@ -17,12 +17,12 @@ func TestBiz_ConfigUsecase_SaveDeviceConfig(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	usecase, cleanUp, err := test.InitConfigUsecase(bc.Data, log.DefaultLogger)
+	usecase, cleanUp, err := InitConfigUsecase(bc.Data, log.DefaultLogger)
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(cleanUp)
-	info := &DeviceGeneralInfo{
+	info := &biz.DeviceGeneralInfo{
 		Username:      t.Name(),
 		DeviceClassID: 0,
 		DeviceID:      t.Name(),
@@ -43,11 +43,11 @@ func TestBiz_ConfigUsecase_SaveDeviceConfig(t *testing.T) {
 	// 注册关闭连接和删除测试中创建的键的清理函数
 	t.Cleanup(cleanUp2)
 	t.Cleanup(func() {
-		client.Del(context.Background(), getDeviceConfigKey(info))
+		client.Del(context.Background(), biz.GetDeviceConfigKey(info))
 	})
 
 	// 通过将刚保存的信息查询出来，并比较，判断是否保存成功
-	result, err := client.HGet(context.Background(), getDeviceConfigKey(info), info.DeviceID).Result()
+	result, err := client.HGet(context.Background(), biz.GetDeviceConfigKey(info), info.DeviceID).Result()
 	if err != nil {
 		t.Fatal(err)
 	}

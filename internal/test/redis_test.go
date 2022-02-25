@@ -1,9 +1,10 @@
-package data
+package test
 
 import (
 	"context"
 	"gitee.com/moyusir/dataCollection/internal/biz"
 	"gitee.com/moyusir/dataCollection/internal/conf"
+	"gitee.com/moyusir/dataCollection/internal/data"
 	"github.com/go-kratos/kratos/v2/log"
 	"os"
 	"testing"
@@ -15,7 +16,7 @@ func TestData_RedisRepo(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	data, cleanUp, err := NewData(bc.Data, log.NewStdLogger(os.Stdout))
+	client, cleanUp, err := data.NewData(bc.Data, log.NewStdLogger(os.Stdout))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -23,14 +24,14 @@ func TestData_RedisRepo(t *testing.T) {
 	t.Cleanup(cleanUp)
 
 	// 初始化redis dao
-	redisRepo := NewRedisRepo(data, log.NewStdLogger(os.Stdout))
+	redisRepo := data.NewRedisRepo(client, log.NewStdLogger(os.Stdout))
 	// 允许并行运行子测试
 	t.Parallel()
 	// 设备保存测试
 	t.Run("Save_Device_Config", func(t *testing.T) {
 		// 注册清理函数，删除测试中创建的hash
 		t.Cleanup(func() {
-			data.Del(context.Background(), t.Name())
+			client.Del(context.Background(), t.Name())
 		})
 		err := redisRepo.SaveDeviceConfig(t.Name(), t.Name(), []byte(t.Name()))
 		if err != nil {
@@ -38,7 +39,7 @@ func TestData_RedisRepo(t *testing.T) {
 			return
 		}
 		// 测试是否能够查询得到刚保存在hash中的信息
-		err = data.HGet(context.Background(), t.Name(), t.Name()).Err()
+		err = client.HGet(context.Background(), t.Name(), t.Name()).Err()
 		if err != nil {
 			t.Error(err)
 		}
@@ -63,14 +64,14 @@ func TestData_RedisRepo(t *testing.T) {
 		)
 		// 注册清理函数，清理测试中创建的zset和ts
 		t.Cleanup(func() {
-			data.Del(context.Background(), state.Key)
+			client.Del(context.Background(), state.Key)
 			for _, f := range fields {
-				data.Del(context.Background(), f.Key)
+				client.Del(context.Background(), f.Key)
 			}
 		})
 		// 创建ts
 		for _, f := range fields {
-			err := data.Do(context.Background(), "TS.CREATE", f.Key).Err()
+			err := client.Do(context.Background(), "TS.CREATE", f.Key).Err()
 			if err != nil {
 				t.Error(err)
 				return
@@ -83,7 +84,7 @@ func TestData_RedisRepo(t *testing.T) {
 		}
 		// 通过查询操作测试上述的保存操作是否成功
 		// 查询对应zset的size
-		result, err := data.ZCard(context.Background(), state.Key).Result()
+		result, err := client.ZCard(context.Background(), state.Key).Result()
 		if err != nil {
 			t.Error(err)
 		} else if result == 0 {
@@ -91,7 +92,7 @@ func TestData_RedisRepo(t *testing.T) {
 		}
 		// 查询每个field对应的ts是否为空
 		for _, f := range fields {
-			result, err := data.Do(context.Background(), "TS.GET", f.Key).Slice()
+			result, err := client.Do(context.Background(), "TS.GET", f.Key).Slice()
 			if err != nil {
 				t.Error(err)
 			} else if len(result) == 0 {

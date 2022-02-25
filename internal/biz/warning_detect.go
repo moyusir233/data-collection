@@ -42,7 +42,7 @@ func (u *WarningDetectUsecase) SaveDeviceState(info *DeviceGeneralInfo, state pr
 	)
 	// 以<用户id>:device_state:<设备类别号>为键，在zset中保存
 	// 以timestamp为score，以设备状态二进制protobuf信息为value的键值对
-	s.Key = getDeviceStateKey(info)
+	s.Key = GetDeviceStateKey(info)
 	marshal, err := proto.Marshal(state)
 	if err != nil {
 		return err
@@ -51,7 +51,7 @@ func (u *WarningDetectUsecase) SaveDeviceState(info *DeviceGeneralInfo, state pr
 	for k, v := range fields {
 		field := new(DeviceStateField)
 		// 每个预警字段保存到以<用户id>:device_state:<设备类别号>:<设备字段名>:<设备id>的ts中
-		field.Key = getDeviceStateFieldKey(info, k)
+		field.Key = GetDeviceStateFieldKey(info, k)
 		field.Value = v
 		f = append(f, field)
 	}

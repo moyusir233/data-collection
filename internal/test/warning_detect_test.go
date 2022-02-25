@@ -1,11 +1,11 @@
-package biz
+package test
 
 import (
 	"context"
 	"fmt"
+	"gitee.com/moyusir/dataCollection/internal/biz"
 	"gitee.com/moyusir/dataCollection/internal/conf"
 	"gitee.com/moyusir/dataCollection/internal/data"
-	"gitee.com/moyusir/dataCollection/internal/test"
 	v1 "gitee.com/moyusir/util/api/util/v1"
 	"github.com/go-kratos/kratos/v2/log"
 	"google.golang.org/protobuf/proto"
@@ -17,13 +17,13 @@ func TestBiz_WarningDetectUsecase_SaveDeviceState(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	usecase, cleanUp, err := test.InitWarningDetectUsecase(bc.Data, log.DefaultLogger)
+	usecase, cleanUp, err := InitWarningDetectUsecase(bc.Data, log.DefaultLogger)
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(cleanUp)
 
-	info := &DeviceGeneralInfo{
+	info := &biz.DeviceGeneralInfo{
 		Username:      t.Name(),
 		DeviceClassID: 0,
 		DeviceID:      t.Name(),
@@ -47,15 +47,15 @@ func TestBiz_WarningDetectUsecase_SaveDeviceState(t *testing.T) {
 	// 注册关闭连接和删除测试中创建的键的清理函数
 	t.Cleanup(cleanUp2)
 	t.Cleanup(func() {
-		client.Del(context.Background(), getDeviceStateKey(info))
+		client.Del(context.Background(), biz.GetDeviceStateKey(info))
 		for k, _ := range fields {
-			client.Del(context.Background(), getDeviceStateFieldKey(info, k))
+			client.Del(context.Background(), biz.GetDeviceStateFieldKey(info, k))
 		}
 	})
 
 	// 提前创建fields需要的ts
 	for k, _ := range fields {
-		client.Do(context.Background(), "TS.CREATE", getDeviceStateFieldKey(info, k))
+		client.Do(context.Background(), "TS.CREATE", biz.GetDeviceStateFieldKey(info, k))
 	}
 
 	err = usecase.SaveDeviceState(info, &state, fields)
@@ -69,7 +69,7 @@ func TestBiz_WarningDetectUsecase_SaveDeviceState(t *testing.T) {
 		t.Fatal(err)
 	}
 	v := fmt.Sprintf("%x", marshal)
-	result, err := client.ZRem(context.Background(), getDeviceStateKey(info), v).Result()
+	result, err := client.ZRem(context.Background(), biz.GetDeviceStateKey(info), v).Result()
 	if err != nil {
 		t.Fatal(err)
 	}
