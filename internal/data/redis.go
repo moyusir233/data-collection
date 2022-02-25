@@ -27,7 +27,7 @@ func NewRedisRepo(data *Data, logger log.Logger) *RedisRepo {
 func (r *RedisRepo) SaveDeviceConfig(key, field string, value []byte) error {
 	// 这里将value转换为十六进制的字符串进行保存
 	v := fmt.Sprintf("%x", value)
-	if err := r.client.HSet(context.Background(), key, v).Err(); err != nil {
+	if err := r.client.HSet(context.Background(), key, field, v).Err(); err != nil {
 		return err
 	}
 	return nil

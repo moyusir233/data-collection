@@ -35,15 +35,15 @@ func TestRedisRepo(t *testing.T) {
 	t.Parallel()
 	// 设备保存测试
 	t.Run("Save_Device_Config", func(t *testing.T) {
+		// 注册清理函数，删除测试中创建的hash
+		t.Cleanup(func() {
+			data.Del(context.Background(), t.Name())
+		})
 		err := redisRepo.SaveDeviceConfig(t.Name(), t.Name(), []byte(t.Name()))
 		if err != nil {
 			t.Error(err)
 			return
 		}
-		// 若保存成功，注册清理函数，删除测试中创建的hash
-		t.Cleanup(func() {
-			data.Del(context.Background(), t.Name())
-		})
 		// 测试是否能够查询得到刚保存在hash中的信息
 		err = data.HGet(context.Background(), t.Name(), t.Name()).Err()
 		if err != nil {
@@ -68,11 +68,6 @@ func TestRedisRepo(t *testing.T) {
 				},
 			}
 		)
-		err := redisRepo.SaveDeviceState(state, fields...)
-		if err != nil {
-			t.Error(err)
-			return
-		}
 		// 注册清理函数，清理测试中创建的zset和ts
 		t.Cleanup(func() {
 			data.Del(context.Background(), state.Key)
@@ -80,6 +75,19 @@ func TestRedisRepo(t *testing.T) {
 				data.Del(context.Background(), f.Key)
 			}
 		})
+		// 创建ts
+		for _, f := range fields {
+			err := data.Do(context.Background(), "TS.CREATE", f.Key).Err()
+			if err != nil {
+				t.Error(err)
+				return
+			}
+		}
+		err := redisRepo.SaveDeviceState(state, fields...)
+		if err != nil {
+			t.Error(err)
+			return
+		}
 		// 通过查询操作测试上述的保存操作是否成功
 		result, err := data.ZCard(context.Background(), state.Key).Result()
 		if err != nil {
