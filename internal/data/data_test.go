@@ -9,7 +9,7 @@ import (
 	"testing"
 )
 
-func TestNewData(t *testing.T) {
+func TestData_NewData(t *testing.T) {
 	c := config.New(config.WithSource(file.NewSource("../../configs/config.yaml")))
 	if err := c.Load(); err != nil {
 		t.Fatal(err)
