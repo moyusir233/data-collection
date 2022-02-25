@@ -79,7 +79,8 @@ func TestBiz_WarningDetectUsecase_SaveDeviceState(t *testing.T) {
 
 	// 通过查询每个字段对应ts的值并比较，判断保存是否成功
 	for k, v := range fields {
-		slice, err := client.Do(context.Background(), "TS.GET", k).Slice()
+		key := biz.GetDeviceStateFieldKey(info, k)
+		slice, err := client.Do(context.Background(), "TS.GET", key).Slice()
 		if err != nil {
 			t.Error(err)
 		} else if len(slice) == 0 {
