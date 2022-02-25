@@ -88,7 +88,6 @@ func TestBiz_WarningDetectUsecase_SaveDeviceState(t *testing.T) {
 		} else if len(slice) == 0 {
 			t.Errorf("The TS capacity corresponding to the key %v is 0\n", key)
 		} else {
-			fmt.Printf("%T\n", slice[1])
 			query := strings.Trim(fmt.Sprintf("%v", slice[1]), " ")
 			target := strconv.FormatFloat(v, 'f', 0, 64)
 			if query != target {
