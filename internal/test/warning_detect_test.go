@@ -9,6 +9,8 @@ import (
 	v1 "gitee.com/moyusir/util/api/util/v1"
 	"github.com/go-kratos/kratos/v2/log"
 	"google.golang.org/protobuf/proto"
+	"strconv"
+	"strings"
 	"testing"
 )
 
@@ -84,15 +86,14 @@ func TestBiz_WarningDetectUsecase_SaveDeviceState(t *testing.T) {
 		if err != nil {
 			t.Error(err)
 		} else if len(slice) == 0 {
-			t.Error()
+			t.Errorf("The TS capacity corresponding to the key %v is 0\n", key)
 		} else {
-			query, ok := slice[1].(float64)
-			if !ok {
-				t.Errorf("%v can not be converted to float64\n", slice[1])
-			} else if query != v {
-				t.Errorf(
-					"The query result %v is inconsistent with the saved result %v\n",
-					query, v,
+			fmt.Printf("%T\n", slice[1])
+			query := strings.Trim(fmt.Sprintf("%v", slice[1]), " ")
+			target := strconv.FormatFloat(v, 'f', 0, 64)
+			if query != target {
+				t.Errorf("The value saved in TS %v is different from the value queried %v\n",
+					query, target,
 				)
 			}
 		}
