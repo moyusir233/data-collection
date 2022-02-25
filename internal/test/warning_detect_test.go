@@ -84,13 +84,16 @@ func TestBiz_WarningDetectUsecase_SaveDeviceState(t *testing.T) {
 		if err != nil {
 			t.Error(err)
 		} else if len(slice) == 0 {
-			t.Fail()
+			t.Error()
 		} else {
 			query, ok := slice[1].(float64)
 			if !ok {
-				t.Fail()
+				t.Errorf("%v can not be converted to float64\n", slice[1])
 			} else if query != v {
-				t.Error("The query result is inconsistent with the saved result")
+				t.Errorf(
+					"The query result %v is inconsistent with the saved result %v\n",
+					query, v,
+				)
 			}
 		}
 	}

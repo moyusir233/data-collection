@@ -88,7 +88,7 @@ func TestData_RedisRepo(t *testing.T) {
 		if err != nil {
 			t.Error(err)
 		} else if result == 0 {
-			t.Fail()
+			t.Error("The corresponding Zset capacity is 0")
 		}
 		// 查询每个field对应的ts是否为空
 		for _, f := range fields {
@@ -96,7 +96,7 @@ func TestData_RedisRepo(t *testing.T) {
 			if err != nil {
 				t.Error(err)
 			} else if len(result) == 0 {
-				t.Fail()
+				t.Error("The corresponding Ts capacity is 0")
 			}
 		}
 	})
