@@ -1,6 +1,6 @@
 module gitee.com/moyusir/dataCollection
 
-go 1.17
+go 1.16
 
 require (
 	github.com/go-kratos/kratos/v2 v2.1.5
