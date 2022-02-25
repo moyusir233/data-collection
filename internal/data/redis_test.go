@@ -4,22 +4,15 @@ import (
 	"context"
 	"gitee.com/moyusir/dataCollection/internal/biz"
 	"gitee.com/moyusir/dataCollection/internal/conf"
-	"github.com/go-kratos/kratos/v2/config"
-	"github.com/go-kratos/kratos/v2/config/file"
 	"github.com/go-kratos/kratos/v2/log"
 	"os"
 	"testing"
 )
 
-func TestRedisRepo(t *testing.T) {
+func TestData_RedisRepo(t *testing.T) {
 	// 初始化redis连接
-	c := config.New(config.WithSource(file.NewSource("../../configs/config.yaml")))
-	if err := c.Load(); err != nil {
-		t.Fatal(err)
-	}
-	defer c.Close()
-	var bc conf.Bootstrap
-	if err := c.Scan(&bc); err != nil {
+	bc, err := conf.LoadConfig("../../configs/config.yaml")
+	if err != nil {
 		t.Fatal(err)
 	}
 	data, cleanUp, err := NewData(bc.Data, log.NewStdLogger(os.Stdout))
@@ -89,12 +82,14 @@ func TestRedisRepo(t *testing.T) {
 			return
 		}
 		// 通过查询操作测试上述的保存操作是否成功
+		// 查询对应zset的size
 		result, err := data.ZCard(context.Background(), state.Key).Result()
 		if err != nil {
 			t.Error(err)
 		} else if result == 0 {
 			t.Fail()
 		}
+		// 查询每个field对应的ts是否为空
 		for _, f := range fields {
 			result, err := data.Do(context.Background(), "TS.GET", f.Key).Slice()
 			if err != nil {
@@ -104,5 +99,4 @@ func TestRedisRepo(t *testing.T) {
 			}
 		}
 	})
-	t.Logf("%s测试成功", t.Name())
 }

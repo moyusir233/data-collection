@@ -16,7 +16,7 @@ type RedisRepo struct {
 }
 
 // NewRedisRepo 实例化redis数据库操作对象
-func NewRedisRepo(data *Data, logger log.Logger) *RedisRepo {
+func NewRedisRepo(data *Data, logger log.Logger) biz.UnionRepo {
 	return &RedisRepo{
 		client: data,
 		logger: log.NewHelper(logger),

@@ -2,6 +2,8 @@ package service
 
 import (
 	"context"
+	"gitee.com/moyusir/dataCollection/internal/biz"
+	"github.com/go-kratos/kratos/v2/log"
 	"io"
 
 	pb "gitee.com/moyusir/dataCollection/api/dataCollection/v1"
@@ -9,10 +11,15 @@ import (
 
 type ConfigService struct {
 	pb.UnimplementedConfigServer
+	uc     *biz.ConfigUsecase
+	logger *log.Helper
 }
 
-func NewConfigService() *ConfigService {
-	return &ConfigService{}
+func NewConfigService(uc *biz.ConfigUsecase, logger log.Logger) *ConfigService {
+	return &ConfigService{
+		uc:     uc,
+		logger: log.NewHelper(logger),
+	}
 }
 
 func (s *ConfigService) UpdateDeviceConfig(ctx context.Context, req *pb.DeviceConfig) (*pb.ConfigServiceReply, error) {
