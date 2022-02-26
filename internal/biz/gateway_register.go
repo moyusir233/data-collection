@@ -3,39 +3,38 @@ package biz
 import (
 	"fmt"
 	"gitee.com/moyusir/dataCollection/internal/conf"
-	"gitee.com/moyusir/dataCollection/internal/service"
 	"gitee.com/moyusir/util/kong"
 	"github.com/go-kratos/kratos/v2/log"
-	"os"
 	"sync"
 	"time"
 )
 
-// RouteRegister 负责路由的注册以及自动注销
-type RouteRegister struct {
+// GatewayRegister 负责路由的注册以及自动注销
+type GatewayRegister struct {
 	// 网关客户端
 	gateway *kong.Admin
 	// 路由的自动注销时间
 	timeout time.Duration
-	// 与路由关联注册的本机服务名
-	serviceName string
-	// 注册表
+	// route注册表
 	table *sync.Map
 }
 
-func NewRouteRegister(c *conf.Server, logger log.Logger) *RouteRegister {
-	name, _ := os.LookupEnv("SERVICE_NAME")
-	return &RouteRegister{
-		gateway:     kong.NewAdmin(c.Gateway.Address, logger),
-		timeout:     c.Gateway.RouteTimeout.AsDuration(),
-		serviceName: name,
-		table:       new(sync.Map),
+func NewGatewayRegister(c *conf.Server, logger log.Logger) *GatewayRegister {
+	return &GatewayRegister{
+		gateway: kong.NewAdmin(c.Gateway.Address, logger),
+		timeout: c.Gateway.RouteTimeout.AsDuration(),
+		table:   new(sync.Map),
 	}
 }
 
-// Activate 激活给定设备的路由,对于已注册的路由重置计时器,对于未注册的路由则注册
-func (r *RouteRegister) Activate(info *DeviceGeneralInfo) error {
-	key := fmt.Sprintf("%s_%d_%s", service.Username, info.DeviceClassID, info.DeviceID)
+// CreateService 创建service对象
+func (r *GatewayRegister) CreateService() error {
+
+}
+
+// ActivateRoute 激活给定设备的路由,对于已注册的路由重置计时器,对于未注册的路由则注册
+func (r *GatewayRegister) ActivateRoute(info *DeviceGeneralInfo) error {
+	key := fmt.Sprintf("%s_%d_%s", conf.Username, info.DeviceClassID, info.DeviceID)
 	if ticker, ok := r.table.Load(key); ok {
 		// 通过重新设置定时器激活路由
 		ticker.(*time.Ticker).Reset(r.timeout)
@@ -56,7 +55,7 @@ func (r *RouteRegister) Activate(info *DeviceGeneralInfo) error {
 			Service: &struct {
 				Name string `json:"name,omitempty"`
 				Id   string `json:"id,omitempty"`
-			}{Name: r.serviceName},
+			}{Name: conf.ServiceName},
 		})
 		if err != nil {
 			return err
@@ -67,19 +66,21 @@ func (r *RouteRegister) Activate(info *DeviceGeneralInfo) error {
 	}
 }
 
-// UnRegister 注销路由
-func (r *RouteRegister) UnRegister(info *DeviceGeneralInfo) {
-	key := fmt.Sprintf("%s_%d_%s", service.Username, info.DeviceClassID, info.DeviceID)
+// UnRegisterRoute 注销路由
+func (r *GatewayRegister) UnRegisterRoute(info *DeviceGeneralInfo) {
+	key := fmt.Sprintf("%s_%d_%s", conf.Username, info.DeviceClassID, info.DeviceID)
 	if ticker, ok := r.table.Load(key); ok {
 		// 通过设置定时器为1纳秒，快速触发路由的自动注销
 		ticker.(*time.Ticker).Reset(time.Nanosecond)
 	}
 }
-func (r *RouteRegister) autoUnRegister(ticker *time.Ticker, route kong.Object) {
+func (r *GatewayRegister) autoUnRegister(ticker *time.Ticker, route kong.Object) {
 	<-ticker.C
 	// 注销路由并删除路由表中信息
 	// 先向网关注销路由，再删除路由表中信息，
 	// 确保先注销路由，避免向网关注册路由和注销路由同时发生
 	r.gateway.Delete(route)
-	r.table.Delete(route.(*kong.Route).Id)
+	// 删除路由表信息后再关闭计时器,避免其他协程对已经关闭的计时器执行reset
+	r.table.Delete(route.(*kong.Route).Name)
+	ticker.Stop()
 }
