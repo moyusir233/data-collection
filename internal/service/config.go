@@ -9,15 +9,10 @@ import (
 	pb "gitee.com/moyusir/dataCollection/api/dataCollection/v1"
 )
 
-// 定义了当前程序服务的用户及其设备的基本信息，由服务中心生成代码时注入
-const (
-	Username         = "test"
-	DeviceClassCount = 5
-)
-
 type ConfigService struct {
 	pb.UnimplementedConfigServer
-	uc     *biz.ConfigUsecase
+	uc *biz.ConfigUsecase
+
 	logger *log.Helper
 }
 

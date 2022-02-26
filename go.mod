@@ -10,4 +10,4 @@ require (
 	google.golang.org/protobuf v1.27.1
 )
 
-require gitee.com/moyusir/util v0.0.0-20220225072404-63cf9b4aacf8
+require gitee.com/moyusir/util v0.0.0

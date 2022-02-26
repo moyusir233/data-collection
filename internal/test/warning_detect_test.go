@@ -26,7 +26,6 @@ func TestBiz_WarningDetectUsecase_SaveDeviceState(t *testing.T) {
 	t.Cleanup(cleanUp)
 
 	info := &biz.DeviceGeneralInfo{
-		Username:      t.Name(),
 		DeviceClassID: 0,
 		DeviceID:      t.Name(),
 	}
