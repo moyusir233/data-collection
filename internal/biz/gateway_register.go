@@ -9,6 +9,12 @@ import (
 	"time"
 )
 
+var (
+	defaultServiceCreateOption    *kong.ServiceCreateOption
+	defaultRouteCreateOption      *kong.RouteCreateOption
+	defaultAuthPluginCreateOption *kong.KeyAuthPluginCreateOption
+)
+
 // GatewayRegister 负责路由的注册以及自动注销
 type GatewayRegister struct {
 	// 网关客户端
@@ -17,9 +23,54 @@ type GatewayRegister struct {
 	timeout time.Duration
 	// route注册表
 	table *sync.Map
+	// 除了route以外，所有注册的网关组件，保存用于容器暂停服务时向网关注销组件
+	objects []kong.Object
 }
 
 func NewGatewayRegister(c *conf.Server, logger log.Logger) *GatewayRegister {
+	// 初始化kong组件创建的默认配置
+	defaultServiceCreateOption = &kong.ServiceCreateOption{
+		Name:     conf.ServiceName,
+		Protocol: "http",
+		Host:     conf.ServiceHost,
+		Port:     int(c.Http.Port),
+		Path:     "/",
+		Enabled:  true,
+		Tags:     []string{conf.Username},
+	}
+	// route的name和headers在注册路由时动态填写
+	defaultRouteCreateOption = &kong.RouteCreateOption{
+		Name:      "",
+		Protocols: []string{"http"},
+		Methods:   []string{"POST"},
+		Hosts:     []string{conf.AppDomainName},
+		Headers: map[string][]string{
+			"X-Device-ID": {""},
+		},
+		StripPath: false,
+		Service: &struct {
+			Name string `json:"name,omitempty"`
+			Id   string `json:"id,omitempty"`
+		}{Name: conf.ServiceName},
+		Tags: []string{conf.Username},
+	}
+	// 注册与service相关联的用户认证插件
+	defaultAuthPluginCreateOption = &kong.KeyAuthPluginCreateOption{
+		Enabled: true,
+		Service: &struct {
+			Name string `json:"name,omitempty"`
+			Id   string `json:"id,omitempty"`
+		}{Name: conf.ServiceName},
+		// 配置通过请求头进行认证
+		Config: &kong.KeyAuthPluginConfig{
+			KeyNames:    []string{"X-Api-Key"},
+			KeyInQuery:  false,
+			KeyInBody:   false,
+			KeyInHeader: true,
+		},
+		Tags: []string{conf.Username},
+	}
+
 	return &GatewayRegister{
 		gateway: kong.NewAdmin(c.Gateway.Address, logger),
 		timeout: c.Gateway.RouteTimeout.AsDuration(),
@@ -27,9 +78,32 @@ func NewGatewayRegister(c *conf.Server, logger log.Logger) *GatewayRegister {
 	}
 }
 
-// CreateService 创建service对象
-func (r *GatewayRegister) CreateService() error {
+// Init 创建服务的网关组件service以及plugin,route动态创建
+func (r *GatewayRegister) Init() error {
+	options := []interface{}{
+		defaultServiceCreateOption,
+		defaultAuthPluginCreateOption,
+	}
+	for _, o := range options {
+		object, err := r.gateway.Create(o)
+		if err != nil {
+			return err
+		}
+		r.objects = append(r.objects, object)
+		// 组件创建需要间隔一段时间
+		time.Sleep(time.Second)
+	}
+	return nil
+}
 
+// Close 清理服务注册的相关网关组件
+func (r *GatewayRegister) Close() error {
+	var err error = nil
+	// 依据创建组件时的倒序注销组件，避免由于组件依赖关系造成的无法删除错误
+	for i := len(r.objects) - 1; i >= 0; i-- {
+		err = r.gateway.Delete(r.objects[i])
+	}
+	return err
 }
 
 // ActivateRoute 激活给定设备的路由,对于已注册的路由重置计时器,对于未注册的路由则注册
@@ -42,25 +116,14 @@ func (r *GatewayRegister) ActivateRoute(info *DeviceGeneralInfo) error {
 	} else {
 		// 创建设备配置更新使用的路由,以请求头和host作为路由匹配规则
 		// 先写入路由表，避免多协程对单个路由多次注册
+		ticker := time.NewTicker(r.timeout)
 		r.table.Store(key, ticker)
-		route, err := r.gateway.Create(&kong.RouteCreateOption{
-			Name:      key,
-			Protocols: []string{"http"},
-			Methods:   []string{"POST"},
-			Hosts:     []string{"gd-k8s-master01"},
-			Headers: map[string][]string{
-				"X-Device-ID": {key},
-			},
-			StripPath: false,
-			Service: &struct {
-				Name string `json:"name,omitempty"`
-				Id   string `json:"id,omitempty"`
-			}{Name: conf.ServiceName},
-		})
+		defaultRouteCreateOption.Name = key
+		defaultRouteCreateOption.Headers["X-Device-ID"] = []string{key}
+		route, err := r.gateway.Create(defaultRouteCreateOption)
 		if err != nil {
 			return err
 		}
-		ticker := time.NewTicker(r.timeout)
 		go r.autoUnRegister(ticker, route)
 		return nil
 	}

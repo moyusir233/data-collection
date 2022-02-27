@@ -1,49 +1,51 @@
 syntax = "proto3";
-package kratos.api;
 
-option go_package = "gitee.com/moyusir/dataCollection/internal/conf;conf";
+package kratos.api;
 
 import "google/protobuf/duration.proto";
 
+option go_package = "gitee.com/moyusir/dataCollection/internal/conf;conf";
+
 message Bootstrap {
-  Server server = 1;
-  Data data = 2;
+    Server server = 1;
+    Data data = 2;
 }
 
 message Server {
-  message HTTP {
-    string network = 1;
-    string addr = 2;
-    google.protobuf.Duration timeout = 3;
-  }
-  message GRPC {
-    string network = 1;
-    string addr = 2;
-    google.protobuf.Duration timeout = 3;
-  }
-  message Gateway{
-    string address=1;
-    google.protobuf.Duration route_timeout = 2;
-  }
-  HTTP http = 1;
-  GRPC grpc = 2;
-  Gateway gateway = 3;
+    message HTTP {
+        string network = 1;
+        string addr = 2;
+        int64 port = 3;
+        google.protobuf.Duration timeout = 4;
+    }
+    message GRPC {
+        string network = 1;
+        string addr = 2;
+        google.protobuf.Duration timeout = 3;
+    }
+    message Gateway {
+        string address = 1;
+        google.protobuf.Duration route_timeout = 2;
+    }
+    HTTP http = 1;
+    GRPC grpc = 2;
+    Gateway gateway = 3;
 }
 
 message Data {
-  message Redis {
-    // redis service的主机地址
-    string host = 1;
-    // redis server端口
-    int64 server_port = 2;
-    // redis sentinel端口
-    int64 sentinel_port = 3;
-    // redis sentinel集群使用的master标识名
-    string master_name=4;
-    // redis连接池大小
-    int64 pool_size=5;
-    // redis连接池的最小空闲连接数
-    int64 min_idle_conns=6;
-  }
-  Redis redis = 1;
+    message Redis {
+        // redis service的主机地址
+        string host = 1;
+        // redis server端口
+        int64 server_port = 2;
+        // redis sentinel端口
+        int64 sentinel_port = 3;
+        // redis sentinel集群使用的master标识名
+        string master_name = 4;
+        // redis连接池大小
+        int64 pool_size = 5;
+        // redis连接池的最小空闲连接数
+        int64 min_idle_conns = 6;
+    }
+    Redis redis = 1;
 }

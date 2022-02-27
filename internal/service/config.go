@@ -11,15 +11,16 @@ import (
 
 type ConfigService struct {
 	pb.UnimplementedConfigServer
-	uc *biz.ConfigUsecase
-
-	logger *log.Helper
+	uc       *biz.ConfigUsecase
+	register *biz.GatewayRegister
+	logger   *log.Helper
 }
 
-func NewConfigService(uc *biz.ConfigUsecase, logger log.Logger) *ConfigService {
+func NewConfigService(uc *biz.ConfigUsecase, r *biz.GatewayRegister, logger log.Logger) *ConfigService {
 	return &ConfigService{
-		uc:     uc,
-		logger: log.NewHelper(logger),
+		uc:       uc,
+		register: r,
+		logger:   log.NewHelper(logger),
 	}
 }
 func (s *ConfigService) SaveInitDeviceConfig(conn pb.Config_SaveInitDeviceConfigServer) error {
