@@ -77,6 +77,7 @@ func TestBiz_GatewayRegister(t *testing.T) {
 	}
 	// 注销掉route，再发出请求
 	register.UnRegisterRoute(info)
+	time.Sleep(time.Second)
 	response, err = client.R().SetHeaders(map[string]string{
 		"X-Device-ID": deviceID,
 		"X-Api-Key":   key.(*kong.Key).Key,
