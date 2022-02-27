@@ -5,6 +5,7 @@ import (
 	"gitee.com/moyusir/dataCollection/internal/conf"
 	"gitee.com/moyusir/util/kong"
 	"github.com/go-kratos/kratos/v2/log"
+	"golang.org/x/sync/errgroup"
 	"sync"
 	"time"
 )
@@ -25,6 +26,8 @@ type GatewayRegister struct {
 	table *sync.Map
 	// 除了route以外，所有注册的网关组件，保存用于容器暂停服务时向网关注销组件
 	objects []kong.Object
+	// 用于多协程控制
+	eg *errgroup.Group
 }
 
 func NewGatewayRegister(c *conf.Server, logger log.Logger) *GatewayRegister {
@@ -42,7 +45,7 @@ func NewGatewayRegister(c *conf.Server, logger log.Logger) *GatewayRegister {
 	defaultRouteCreateOption = &kong.RouteCreateOption{
 		Name:      "",
 		Protocols: []string{"http"},
-		Methods:   []string{"POST"},
+		Methods:   []string{"POST", "GET"},
 		Hosts:     []string{conf.AppDomainName},
 		Headers: map[string][]string{
 			"X-Device-ID": {""},
@@ -75,6 +78,7 @@ func NewGatewayRegister(c *conf.Server, logger log.Logger) *GatewayRegister {
 		gateway: kong.NewAdmin(c.Gateway.Address, logger),
 		timeout: c.Gateway.RouteTimeout.AsDuration(),
 		table:   new(sync.Map),
+		eg:      new(errgroup.Group),
 	}
 }
 
@@ -103,6 +107,13 @@ func (r *GatewayRegister) Close() error {
 	for i := len(r.objects) - 1; i >= 0; i-- {
 		err = r.gateway.Delete(r.objects[i])
 	}
+	// 注销所有路由
+	r.table.Range(func(key, value interface{}) bool {
+		value.(*time.Ticker).Reset(time.Nanosecond)
+		return true
+	})
+	// 等待所有路由都被注销
+	r.eg.Wait()
 	return err
 }
 
@@ -124,7 +135,10 @@ func (r *GatewayRegister) ActivateRoute(info *DeviceGeneralInfo) error {
 		if err != nil {
 			return err
 		}
-		go r.autoUnRegister(ticker, route)
+		r.eg.Go(func() error {
+			r.autoUnRegister(ticker, route)
+			return nil
+		})
 		return nil
 	}
 }

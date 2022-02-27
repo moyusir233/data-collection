@@ -2,9 +2,13 @@ server:
   http:
     addr: 0.0.0.0:8000
     timeout: 1s
+    port: 80
   grpc:
     addr: 0.0.0.0:9000
     timeout: 1s
+  gateway:
+    address: http://kong.test.svc.cluster.local:8001
+    routeTimeout: 60s
 data:
   redis:
     host: redis.default.svc.cluster.local
