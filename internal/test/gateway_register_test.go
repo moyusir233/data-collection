@@ -9,9 +9,10 @@ import (
 	"github.com/imroc/req/v3"
 	"net/http"
 	"testing"
+	"time"
 )
 
-func TestGatewayRegister(t *testing.T) {
+func TestBiz_GatewayRegister(t *testing.T) {
 	// 导入配置
 	bootstrap, err := conf.LoadConfig("../../configs/config.yaml")
 	if err != nil {
@@ -42,6 +43,7 @@ func TestGatewayRegister(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	time.Sleep(time.Second)
 	// 激活指向测试http服务器的路由
 	info := &biz.DeviceGeneralInfo{
 		DeviceClassID: 0,
@@ -52,6 +54,7 @@ func TestGatewayRegister(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	time.Sleep(time.Second)
 	// 发出请求，一次不携带api-key，一次携带
 	client := req.C().SetBaseURL("http://kong.test.svc.cluster.local:8000")
 	response, err := client.R().SetHeader("X-Device-ID", deviceID).Get("")
