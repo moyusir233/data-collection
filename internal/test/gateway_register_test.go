@@ -56,7 +56,7 @@ func TestBiz_GatewayRegister(t *testing.T) {
 	}
 	time.Sleep(time.Second)
 	// 发出请求，一次不携带api-key，一次携带
-	client := req.C().SetBaseURL("http://kong.test.svc.cluster.local:8000")
+	client := req.C().SetBaseURL("http://kong.test.svc.cluster.local:8000").DevMode()
 	response, err := client.R().SetHeader("X-Device-ID", deviceID).Get("")
 	if err != nil {
 		t.Error(err)
