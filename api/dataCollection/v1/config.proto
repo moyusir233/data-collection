@@ -2,22 +2,28 @@ syntax = "proto3";
 
 package api.dataCollection.v1;
 
+import "google/api/annotations.proto";
+import "util/api/util/v1/general.proto";
+
 option go_package = "gitee.com/moyusir/dataCollection/api/dataCollection/v1;v1";
 option java_multiple_files = true;
 option java_package = "api.dataCollection.v1";
+
 // 配置管理服务，主要包括配置更新与配置收集
 service Config {
-	// 更新指定设备的配置
-	rpc UpdateDeviceConfig(DeviceConfig)returns (ConfigServiceReply);
-	// 用于和底层设备客户端建立用于配置更新的grpc数据流
-	rpc CreateConfigUpdateStream(stream ConfigServiceReply)returns (stream DeviceConfig);
-	// 从底层数据客户端收集设备初始配置
-	rpc SaveInitDeviceConfig(stream DeviceConfig)returns (ConfigServiceReply);
+    // 更新指定设备的配置
+    rpc UpdateDeviceConfig(api.util.v1.TestedDeviceConfig) returns (ConfigServiceReply) {
+        option (google.api.http) = {
+            post: "/configs"
+			body: "*"
+        };
+    };
+    // 用于和底层设备客户端建立用于配置更新的grpc数据流
+    rpc CreateConfigUpdateStream(stream ConfigServiceReply) returns (stream api.util.v1.TestedDeviceConfig);
+    // 从底层数据客户端收集设备初始配置
+    rpc SaveInitDeviceConfig(stream api.util.v1.TestedDeviceConfig) returns (ConfigServiceReply);
 }
-// 配置信息模板
-message DeviceConfig{
-	int64 id=1;
-}
-message ConfigServiceReply{
-	bool success=1;
+
+message ConfigServiceReply {
+    bool success = 1;
 }

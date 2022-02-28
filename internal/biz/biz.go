@@ -7,7 +7,7 @@ import (
 )
 
 // ProviderSet is biz providers.
-var ProviderSet = wire.NewSet(NewConfigUsecase, NewWarningDetectUsecase, NewGatewayRegister)
+var ProviderSet = wire.NewSet(NewConfigUsecase, NewWarningDetectUsecase, NewRouteManager)
 
 // DeviceGeneralInfo 设备基本信息
 type DeviceGeneralInfo struct {

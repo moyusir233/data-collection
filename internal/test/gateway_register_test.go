@@ -5,7 +5,6 @@ import (
 	"gitee.com/moyusir/dataCollection/internal/biz"
 	"gitee.com/moyusir/dataCollection/internal/conf"
 	"gitee.com/moyusir/util/kong"
-	"github.com/go-kratos/kratos/v2/log"
 	"github.com/imroc/req/v3"
 	"net/http"
 	"testing"
@@ -19,7 +18,7 @@ func TestBiz_GatewayRegister(t *testing.T) {
 		t.Fatal(err)
 	}
 	// 建立kong客户端，创建consumer和其对应的key，为后面的register测试做准备
-	admin := kong.NewAdmin(bootstrap.Server.Gateway.Address, log.DefaultLogger)
+	admin := kong.NewAdmin(bootstrap.Server.Gateway.Address)
 	consumer, err := admin.Create(&kong.ConsumerCreateOption{Username: conf.Username})
 	if err != nil {
 		t.Fatal(err)
@@ -35,7 +34,7 @@ func TestBiz_GatewayRegister(t *testing.T) {
 		admin.Delete(key)
 	})
 	// 实例化register
-	register := biz.NewGatewayRegister(bootstrap.Server, log.DefaultLogger)
+	register := biz.NewRouteManager(bootstrap.Server)
 	t.Cleanup(func() {
 		register.Close()
 	})

@@ -6,6 +6,34 @@ info:
     title: WarningDetect
     description: 预警检测服务，主要包括数据收集部分
     version: 0.0.1
-paths: {}
+paths:
+    /configs:
+        post:
+            summary: 更新指定设备的配置
+            operationId: Config_UpdateDeviceConfig
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/TestedDeviceConfig'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ConfigServiceReply'
 components:
-    schemas: {}
+    schemas:
+        ConfigServiceReply:
+            properties:
+                success:
+                    type: boolean
+        TestedDeviceConfig:
+            properties:
+                id:
+                    type: string
+                status:
+                    type: boolean
+            description: 测试中使用的设备状态信息和设备配置信息

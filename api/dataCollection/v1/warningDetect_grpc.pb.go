@@ -8,6 +8,7 @@ package v1
 
 import (
 	context "context"
+	v1 "gitee.com/moyusir/util/api/util/v1"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -44,7 +45,7 @@ func (c *warningDetectClient) SaveDeviceStateInfo(ctx context.Context, opts ...g
 }
 
 type WarningDetect_SaveDeviceStateInfoClient interface {
-	Send(*DeviceState) error
+	Send(*v1.TestedDeviceState) error
 	Recv() (*WarningDetectServiceReply, error)
 	grpc.ClientStream
 }
@@ -53,7 +54,7 @@ type warningDetectSaveDeviceStateInfoClient struct {
 	grpc.ClientStream
 }
 
-func (x *warningDetectSaveDeviceStateInfoClient) Send(m *DeviceState) error {
+func (x *warningDetectSaveDeviceStateInfoClient) Send(m *v1.TestedDeviceState) error {
 	return x.ClientStream.SendMsg(m)
 }
 
@@ -100,7 +101,7 @@ func _WarningDetect_SaveDeviceStateInfo_Handler(srv interface{}, stream grpc.Ser
 
 type WarningDetect_SaveDeviceStateInfoServer interface {
 	Send(*WarningDetectServiceReply) error
-	Recv() (*DeviceState, error)
+	Recv() (*v1.TestedDeviceState, error)
 	grpc.ServerStream
 }
 
@@ -112,8 +113,8 @@ func (x *warningDetectSaveDeviceStateInfoServer) Send(m *WarningDetectServiceRep
 	return x.ServerStream.SendMsg(m)
 }
 
-func (x *warningDetectSaveDeviceStateInfoServer) Recv() (*DeviceState, error) {
-	m := new(DeviceState)
+func (x *warningDetectSaveDeviceStateInfoServer) Recv() (*v1.TestedDeviceState, error) {
+	m := new(v1.TestedDeviceState)
 	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
