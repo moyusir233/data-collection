@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"gitee.com/moyusir/dataCollection/internal/conf"
 	"gitee.com/moyusir/util/kong"
+	"github.com/google/uuid"
 	"golang.org/x/sync/errgroup"
 	"time"
 )
@@ -14,11 +15,9 @@ var (
 	defaultAuthPluginCreateOption *kong.KeyAuthPluginCreateOption
 )
 
-const DELETED_TAG = "tag has been deleted"
+const DELETED_TAG = "deleted_tag"
 
 // RouteManager 负责管理路由，包括api网关的路由以及服务内部关于设备更新连接的路由
-// todo 修改路由自动注销的机制：将单个路由逐个注销改为利用tag批量注销相关联的所有route
-// todo 修改Close函数，改为利用tag进行批量注销组件
 type RouteManager struct {
 	// 网关客户端
 	gateway *kong.Admin
@@ -108,13 +107,15 @@ func (r *RouteManager) Init() error {
 // Close 清理服务注册的相关网关组件
 func (r *RouteManager) Close() error {
 	var err error = nil
-	// 依据创建组件时的倒序注销组件，避免由于组件依赖关系造成的无法删除错误
-	for i := len(r.objects) - 1; i >= 0; i-- {
-		err = r.gateway.Delete(r.objects[i])
-	}
-	// 注销所有路由
+	// 依据注册时的tag将所有路由组件统一删除
+	r.gateway.Clear(kong.FLAG_ROUTE|kong.FLAG_PLUGIN|kong.FLAG_SERVICE, conf.ServiceName)
+	// 遍历路由表，寻找初始节点，进而关闭channel、定时器以及负责自动注销的协程
 	r.table.Range(func(key, value interface{}) bool {
-		value.(*time.Ticker).Reset(time.Nanosecond)
+		node := value.(*RouteTableNode)
+		if parent := r.table.Find(node); parent.RouteTag != DELETED_TAG {
+			parent.UnregisterTicker.Reset(time.Nanosecond)
+			close(parent.UpdateChannel)
+		}
 		return true
 	})
 	// 等待所有路由都被注销
@@ -122,20 +123,61 @@ func (r *RouteManager) Close() error {
 	return err
 }
 
-// ActivateRoute 激活给定设备的路由,对于已注册的路由重置计时器,对于未注册的路由则注册
+// ActivateRoute 激活给定设备的路由,root为指向协程初始节点指针的指针(协程初始节点不代表任何设备，只是用于保存路由资源)
+// 当传入的*root为nil，即协程初始节点还未初始化时，函数结合传入的info初始化协程初始节点
 // todo 利用RouteTable重新实现路由激活的逻辑，多个相同key的激活请求与多个不同key的激活请求都能否保证协程安全？
-func (r *RouteManager) ActivateRoute(info *DeviceGeneralInfo) error {
+func (r *RouteManager) ActivateRoute(root **RouteTableNode, info *DeviceGeneralInfo) error {
 	key := fmt.Sprintf("%s_%d_%s", conf.Username, info.DeviceClassID, info.DeviceID)
-	if ticker, ok := r.table.Load(key); ok {
-		// 通过重新设置定时器激活路由
-		ticker.(*time.Ticker).Reset(r.timeout)
+	if n, ok := r.table.Load(key); ok {
+		node := n.(*RouteTableNode)
+		parent := r.table.Find(node)
+
+		if *root == nil {
+			// 初始节点不存在，而key对应节点的存在，则复用key对应节点的父节点
+			*root = parent
+		} else {
+			// 当初始节点与key对应节点都存在时，通过将key对应节点与root进行连接以及修改tag,
+			// 实现将key对应节点的路由信息更新
+			// (注意这里并没有直接将key对应的节点群整个连接到root上,只是对单个设备的路由进行了更新)
+			if (*root).RouteTag != parent.RouteTag {
+				// node只是个未连接的普通节点，则修改其连接关系和tag
+				r.table.Join(*root, node)
+				(&kong.Route{Name: key}).Update(&kong.RouteCreateOption{
+					Tags: append(defaultRouteCreateOption.Tags, (*root).RouteTag),
+				})
+			}
+		}
 		return nil
 	} else {
-		// 创建设备配置更新使用的路由,以请求头和host作为路由匹配规则
-		// 先写入路由表，避免多协程对单个路由多次注册
-		ticker := time.NewTicker(r.timeout)
-		r.table.Store(key, ticker)
-		option := kong.RouteCreateOption{
+		// 为key实例化对应的路由节点
+		node := new(RouteTableNode)
+		r.table.Store(key, node)
+
+		if *root == nil {
+			// 初始节点为空，则初始化一个存储路由资源的初始节点
+			// (初始节点不代表任何设备，不需要向网关注册,也不在路由表中建立检索信息,
+			// 只通过访问设备路由节点的parent访问)
+			rootNode := new(RouteTableNode)
+			rootNode.UnregisterTicker = time.NewTicker(r.timeout)
+			// TODO 考虑更新channel的容量问题
+			rootNode.UpdateChannel = make(chan interface{}, 5)
+			// 利用uuid作为tag，确保相关联的路由群使用的tag唯一
+			uid, err := uuid.NewUUID()
+			if err != nil {
+				rootNode.RouteTag = fmt.Sprintf("%s%d", key, time.Now().Unix())
+			} else {
+				rootNode.RouteTag = uid.String()
+			}
+			r.eg.Go(func() error {
+				r.autoUnRegister(rootNode)
+				return nil
+			})
+			*root = rootNode
+		}
+		// 连接到root节点上
+		r.table.Join(*root, node)
+		// 依据root的tag,为新路由节点创建路由信息
+		option := &kong.RouteCreateOption{
 			Name:      key,
 			Protocols: defaultRouteCreateOption.Protocols,
 			Methods:   defaultRouteCreateOption.Methods,
@@ -146,39 +188,52 @@ func (r *RouteManager) ActivateRoute(info *DeviceGeneralInfo) error {
 			},
 			StripPath: defaultRouteCreateOption.StripPath,
 			Service:   defaultRouteCreateOption.Service,
-			Tags:      defaultRouteCreateOption.Tags,
+			Tags:      append(defaultRouteCreateOption.Tags, (*root).RouteTag),
 		}
-		route, err := r.gateway.Create(&option)
-		// route创建失败大部分情况下是由于客户端重连，被负载均衡到了其他的服务容器上
-		// 导致原来的route没有删除，此时更新route即可
+		_, err := r.gateway.Create(option)
+		// 路由的创建失败大部分原因下是由于负载均衡导致客户端在多个容器服务处
+		// 注册了路由信息，造成路由创建冲突，此时更新相应的路由信息即可
 		if err != nil {
-			route = new(kong.Route)
-			err = route.(*kong.Route).Update(&option)
+			route := &kong.Route{Name: key}
+			route.Update(option)
 		}
-		r.eg.Go(func() error {
-			r.autoUnRegister(ticker, route)
-			return nil
-		})
-		return err
 	}
+	// 重置定时器，相当于激活路由
+	(*root).UnregisterTicker.Reset(r.timeout)
+	return nil
 }
 
-// UnRegisterRoute 注销路由
+// UnRegisterRoute 注销路由，包括网关路由信息与路由表中信息(将相关联的route组统一注销，用于客户端正常断联时)
 func (r *RouteManager) UnRegisterRoute(info *DeviceGeneralInfo) {
 	key := fmt.Sprintf("%s_%d_%s", conf.Username, info.DeviceClassID, info.DeviceID)
-	if ticker, ok := r.table.Load(key); ok {
+	if n, ok := r.table.Load(key); ok {
+		parent := r.table.Find(n.(*RouteTableNode))
+		// 清除路由资源
 		// 通过设置定时器为1纳秒，快速触发路由的自动注销
-		ticker.(*time.Ticker).Reset(time.Nanosecond)
+		parent.UnregisterTicker.Reset(time.Nanosecond)
+		close(parent.UpdateChannel)
+		// 清除路由表中的信息
+		var children []string
+		r.table.Range(func(key, value interface{}) bool {
+			if r.table.Find(value.(*RouteTableNode)) == parent {
+				children = append(children, key.(string))
+			}
+			return true
+		})
+		for _, k := range children {
+			r.table.Delete(k)
+		}
 	}
 }
 
 // 自动注销仅仅是将节点对应的若干route信息注销，并将节点的RouteTag标志为已删除的tag
 // 而不会删除节点在路由表中存储的信息，只有当协程检测到客户端的连接正常断开时
 // 才会进行节点的路由注销以及节点信息的删除操作，包括关闭其配置更新channel等
-// todo 考虑node是否协程安全
 func (r *RouteManager) autoUnRegister(node *RouteTableNode) {
 	<-node.UnregisterTicker.C
-	r.gateway.Clear(kong.FLAG_ROUTE, node.RouteTag)
-	node.RouteTag = DELETED_TAG
+	if node.RouteTag != DELETED_TAG {
+		r.gateway.Clear(kong.FLAG_ROUTE, node.RouteTag)
+		node.RouteTag = DELETED_TAG
+	}
 	node.UnregisterTicker.Stop()
 }

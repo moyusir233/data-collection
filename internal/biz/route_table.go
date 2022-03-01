@@ -9,12 +9,13 @@ import (
 // 考虑到单个底层设备客户端通常会传输多台设备的信息，即往往多台同类设备的信息传输与一条grpc连接(一个协程)相关联，
 // 利用这样的关系，可以采用并查集实现RouteTable，让在同一个协程传输信息的设备的所有路由信息相关联(利用tag,进行同时自动注销)
 // 并使用同一个channel接收设备更新请求。
-// todo 利用并查集以及sync包实现协程安全的RouteTable
+// 注意sync.Map不能保证完全的协程安全，可能会导致多协程对同一路由注册时的重复注册，
+// 但相比使用mutex并发开销更小，相比代价来说能够接收
 type RouteTable struct {
 	sync.Map
 }
 type RouteTableNode struct {
-	//
+	// 设备的配置更新流对应的channel
 	UpdateChannel chan interface{}
 	// 自动向网关注销路由协程使用的计时器
 	UnregisterTicker *time.Ticker
@@ -24,27 +25,18 @@ type RouteTableNode struct {
 	Parent *RouteTableNode
 }
 
-// Find 查询指定key对应的节点的parent，返回查询到的节点和查询结果
-// 当key对应的节点不存在时，返回nil,false
-func (t *RouteTable) Find(key string) (*RouteTableNode, bool) {
-	n, ok := t.Load(key)
-	if !ok {
-		return nil, false
+// Find 查询指定节点所在node群的parent
+func (t *RouteTable) Find(node *RouteTableNode) *RouteTableNode {
+	if node == nil {
+		return nil
 	}
-	node := n.(*RouteTableNode)
 	for node.Parent != nil {
 		node = node.Parent
 	}
-	return node, true
+	return node
 }
 
-// Join 对两个给定节点执行并操作(将node2连接到node1所在node群中)
+// Join 对两个给定节点执行并操作(将node2连接到node1所在node群中，不是将node2所在的node群整个连接到node1中)
 func (t *RouteTable) Join(node1, node2 *RouteTableNode) {
-	for node1.Parent != nil {
-		node1 = node1.Parent
-	}
-	for node2.Parent != nil {
-		node2 = node2.Parent
-	}
-	node2.Parent = node1
+	node2.Parent = t.Find(node1)
 }
