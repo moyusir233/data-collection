@@ -14,6 +14,8 @@ var (
 	defaultAuthPluginCreateOption *kong.KeyAuthPluginCreateOption
 )
 
+const DELETED_TAG = "tag has been deleted"
+
 // RouteManager 负责管理路由，包括api网关的路由以及服务内部关于设备更新连接的路由
 // todo 修改路由自动注销的机制：将单个路由逐个注销改为利用tag批量注销相关联的所有route
 // todo 修改Close函数，改为利用tag进行批量注销组件
@@ -170,16 +172,13 @@ func (r *RouteManager) UnRegisterRoute(info *DeviceGeneralInfo) {
 	}
 }
 
-// 自动注销仅仅是将节点对应的若干route信息注销，并将节点的RouteTag标志为空
+// 自动注销仅仅是将节点对应的若干route信息注销，并将节点的RouteTag标志为已删除的tag
 // 而不会删除节点在路由表中存储的信息，只有当协程检测到客户端的连接正常断开时
 // 才会进行节点的路由注销以及节点信息的删除操作，包括关闭其配置更新channel等
+// todo 考虑node是否协程安全
 func (r *RouteManager) autoUnRegister(node *RouteTableNode) {
 	<-node.UnregisterTicker.C
-	// 注销路由并删除路由表中信息
-	// 先向网关注销路由，再删除路由表中信息，
-	// 确保先注销路由，避免向网关注册路由和注销路由同时发生
-	r.gateway.Delete(route)
-	// 删除路由表信息后再关闭计时器,避免其他协程对已经关闭的计时器执行reset
-	r.table.Delete(route.(*kong.Route).Name)
-	ticker.Stop()
+	r.gateway.Clear(kong.FLAG_ROUTE, node.RouteTag)
+	node.RouteTag = DELETED_TAG
+	node.UnregisterTicker.Stop()
 }
