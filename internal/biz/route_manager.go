@@ -118,6 +118,7 @@ func (r *RouteManager) Close() error {
 		if parent := r.table.Find(node); parent.RouteTag != DELETED_TAG {
 			parent.UnregisterTicker.Reset(time.Nanosecond)
 			close(parent.UpdateChannel)
+			parent.RouteTag = DELETED_TAG
 		}
 		return true
 	})
@@ -146,7 +147,7 @@ func (r *RouteManager) ActivateRoute(root **RouteTableNode, info *DeviceGeneralI
 			if (*root).RouteTag != parent.RouteTag {
 				// node只是个未连接的普通节点，则修改其连接关系和tag
 				r.table.Join(*root, node)
-				(&kong.Route{Name: key}).Update(&kong.RouteCreateOption{
+				(&kong.Route{Name: key, Client: r.gateway.Client}).Update(&kong.RouteCreateOption{
 					Tags: append(defaultRouteCreateOption.Tags, (*root).RouteTag),
 				})
 			}

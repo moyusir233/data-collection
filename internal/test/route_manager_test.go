@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"testing"
+	"time"
 )
 
 const KONG_PROXY_ADDRESS = "http://kong.test.svc.cluster.local:8000"
@@ -78,9 +79,11 @@ func TestRouteManager(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+		time.Sleep(time.Second)
+		// 子测试结束时清除注册的路由
 		t.Cleanup(func() {
-			// 子测试结束时清除注册的路由
 			routeManager.UnRegisterRoute(info)
+			time.Sleep(time.Second)
 		})
 
 		// 不携带key进行发送
@@ -122,7 +125,7 @@ func TestRouteManager(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if root != root2 {
+		if (*root) != (*root2) {
 			t.Error("The initial node is not multiplexed")
 		}
 
@@ -137,7 +140,16 @@ func TestRouteManager(t *testing.T) {
 		}
 
 		// 第四种，传入的初始节点不为空，info对应的设备信息已注册
-		err = routeManager.ActivateRoute(root, info)
+		info3 := &biz.DeviceGeneralInfo{
+			DeviceClassID: 2,
+			DeviceID:      "test",
+		}
+		root3 := new(*biz.RouteTableNode)
+		err = routeManager.ActivateRoute(root3, info3)
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = routeManager.ActivateRoute(root, info3)
 		if err != nil {
 			t.Fatal(err)
 		}
