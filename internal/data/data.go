@@ -14,7 +14,6 @@ var ProviderSet = wire.NewSet(NewData, NewRedisRepo)
 
 // Data .
 type Data struct {
-	// TODO wrapped database client
 	// redis连接客户端
 	*redis.ClusterClient
 }

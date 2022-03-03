@@ -22,7 +22,7 @@ var (
 	AppDomainName = "gd-k8s-master01"
 )
 
-func init() {
+func initEnv() {
 	if username, ok := os.LookupEnv("USERNAME"); ok {
 		Username = username
 	} else {
@@ -50,6 +50,8 @@ func init() {
 	}
 }
 func LoadConfig(path string) (*Bootstrap, error) {
+	initEnv()
+
 	c := config.New(
 		config.WithSource(
 			file.NewSource(path),

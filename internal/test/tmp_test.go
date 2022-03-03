@@ -5,6 +5,7 @@ import (
 	"sync"
 	"sync/atomic"
 	"testing"
+	"time"
 )
 
 // 测试利用sync map能否保证仅进行一次注册
@@ -30,5 +31,14 @@ func TestSync_Map(t *testing.T) {
 	wg.Wait()
 	if success != 1 {
 		t.Error(success)
+	}
+}
+
+// 测试reset ticker的开销
+func BenchmarkResetTicker(b *testing.B) {
+	t := time.NewTicker(time.Second)
+	defer t.Stop()
+	for i := 0; i < b.N; i++ {
+		t.Reset(time.Second)
 	}
 }
