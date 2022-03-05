@@ -2,6 +2,8 @@ package test
 
 import (
 	"context"
+	util "gitee.com/moyusir/util/api/util/v1"
+	"reflect"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -40,5 +42,22 @@ func BenchmarkResetTicker(b *testing.B) {
 	defer t.Stop()
 	for i := 0; i < b.N; i++ {
 		t.Reset(time.Second)
+	}
+}
+
+// 测试利用反射提取结构体值的开销
+func BenchmarkReflect(b *testing.B) {
+	state := &util.TestedDeviceState{
+		Id:          "test",
+		Voltage:     123,
+		Current:     123,
+		Temperature: 123,
+	}
+	fields := []string{"Voltage", "Current", "Temperature"}
+	for i := 0; i < b.N; i++ {
+		value := reflect.ValueOf(*state)
+		for _, f := range fields {
+			value.FieldByName(f).Float()
+		}
 	}
 }

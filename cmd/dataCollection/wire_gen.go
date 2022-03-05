@@ -24,41 +24,21 @@ func initApp(confServer *conf.Server, confData *conf.Data, logger log.Logger) (*
 	if err != nil {
 		return nil, nil, err
 	}
-	redisRepo := data.NewRedisRepo(dataData, logger)
-	configUsecase := biz.NewConfigUsecase(redisRepo, logger)
-	configService := service.NewConfigService(configUsecase, logger)
-	warningDetectUsecase := biz.NewWarningDetectUsecase(redisRepo, logger)
-	warningDetectService := service.NewWarningDetectService(warningDetectUsecase, logger)
-	httpServer := server.NewHTTPServer(confServer, configService, warningDetectService, logger)
+	unionRepo := data.NewRedisRepo(dataData, logger)
+	configUsecase := biz.NewConfigUsecase(unionRepo, logger)
+	routeManager := biz.NewRouteManager(confServer)
+	configService, cleanup2, err := service.NewConfigService(configUsecase, routeManager, logger)
+	if err != nil {
+		cleanup()
+		return nil, nil, err
+	}
+	httpServer := server.NewHTTPServer(confServer, configService, logger)
+	warningDetectUsecase := biz.NewWarningDetectUsecase(unionRepo, logger)
+	warningDetectService := service.NewWarningDetectService(warningDetectUsecase, routeManager, logger)
 	grpcServer := server.NewGRPCServer(confServer, configService, warningDetectService, logger)
 	app := newApp(logger, httpServer, grpcServer)
 	return app, func() {
-		cleanup()
-	}, nil
-}
-
-// init ConfigUsecase 测试用的辅助函数
-func initConfigUsecase(confData *conf.Data, logger log.Logger) (*biz.ConfigUsecase, func(), error) {
-	dataData, cleanup, err := data.NewData(confData, logger)
-	if err != nil {
-		return nil, nil, err
-	}
-	redisRepo := data.NewRedisRepo(dataData, logger)
-	configUsecase := biz.NewConfigUsecase(redisRepo, logger)
-	return configUsecase, func() {
-		cleanup()
-	}, nil
-}
-
-// init WarningDetectUsecase 测试用的辅助函数
-func initWarningDetectUsecase(confData *conf.Data, logger log.Logger) (*biz.WarningDetectUsecase, func(), error) {
-	dataData, cleanup, err := data.NewData(confData, logger)
-	if err != nil {
-		return nil, nil, err
-	}
-	redisRepo := data.NewRedisRepo(dataData, logger)
-	warningDetectUsecase := biz.NewWarningDetectUsecase(redisRepo, logger)
-	return warningDetectUsecase, func() {
+		cleanup2()
 		cleanup()
 	}, nil
 }

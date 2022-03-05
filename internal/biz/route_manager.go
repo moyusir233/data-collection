@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"gitee.com/moyusir/dataCollection/internal/conf"
 	"gitee.com/moyusir/util/kong"
-	"github.com/google/uuid"
 	"golang.org/x/sync/errgroup"
 	"time"
 )
@@ -112,7 +111,7 @@ func (r *RouteManager) Init() error {
 func (r *RouteManager) Close() error {
 	// 依据注册时的tag将所有路由组件统一删除
 	r.gateway.Clear(kong.FLAG_ROUTE|kong.FLAG_PLUGIN|kong.FLAG_SERVICE, conf.ServiceName)
-	// 遍历路由表，寻找初始节点，进而关闭channel、定时器以及负责自动注销的协程
+	// 遍历路由表，寻找父节点，进而关闭channel、定时器以及负责自动注销的协程
 	r.table.Range(func(key, value interface{}) bool {
 		node := value.(*RouteTableNode)
 		if parent := r.table.Find(node); parent.RouteTag != DELETED_TAG {
@@ -128,25 +127,62 @@ func (r *RouteManager) Close() error {
 	return nil
 }
 
-// ActivateRoute 激活给定设备的路由,root为指向协程初始节点指针的指针(协程初始节点不代表任何设备，只是用于保存路由资源)
-// 当传入的*root为nil，即协程初始节点还未初始化时，函数结合传入的info初始化协程初始节点
-func (r *RouteManager) ActivateRoute(root **RouteTableNode, info *DeviceGeneralInfo) error {
-	key := fmt.Sprintf("%s_%d_%s", conf.Username, info.DeviceClassID, info.DeviceID)
+// LoadOrCreateParentNode 查询或创建用户ID对应的，保存相应路由信息的父节点，
+func (r *RouteManager) LoadOrCreateParentNode(clientID string) *RouteTableNode {
+	// 查询clientID对应父节点，若存在则进行复用，不存在则初始化父节点
+	if node, ok := r.table.Load(clientID); ok {
+		return node.(*RouteTableNode)
+	} else {
+		root := new(RouteTableNode)
+		root.UnregisterTicker = time.NewTicker(r.timeout)
+		// TODO 考虑更新channel的容量问题
+		root.UpdateChannel = make(chan interface{}, 5)
+		root.RouteTag = clientID
+		r.eg.Go(func() error {
+			r.autoUnRegister(root)
+			return nil
+		})
+		r.table.Store(clientID, root)
+		return root
+	}
+}
+
+// GetDeviceUpdateChannel 查找设备对应的配置更新channel
+func (r *RouteManager) GetDeviceUpdateChannel(info *DeviceGeneralInfo) (chan<- interface{}, bool) {
+	node, ok := r.table.Load(getKey(info))
+	if ok {
+		return r.table.Find(node.(*RouteTableNode)).UpdateChannel, true
+	} else {
+		return nil, false
+	}
+}
+
+// ActivateRoute 激活给定设备的路由,clientID为客户端连接标识符
+// 函数会为clientID创建相应的路由表节点，称为父节点(协程父节点不代表任何设备，只是用于保存路由资源)
+// 当clientID对应的路由表节点为nil，即协程父节点还未初始化时，函数结合传入的info初始化协程父节点
+func (r *RouteManager) ActivateRoute(clientID string, info *DeviceGeneralInfo) error {
+	// 检索clientID对应的父节点
+	var root *RouteTableNode
+	if n, ok := r.table.Load(clientID); ok {
+		root = n.(*RouteTableNode)
+	}
+
+	key := getKey(info)
 	var err error
 	if n, ok := r.table.Load(key); ok {
 		node := n.(*RouteTableNode)
 		parent := r.table.Find(node)
-
-		if *root == nil {
-			// 初始节点不存在，而key对应节点的存在，则复用key对应节点的父节点
-			*root = parent
+		if root == nil {
+			// 父节点不存在，而key对应节点的存在，则复用key对应节点的父节点
+			root = parent
+			r.table.Store(clientID, root)
 		} else {
-			// 当初始节点与key对应节点都存在时，通过将key对应节点与root进行连接以及修改tag,
+			// 当父节点与key对应节点都存在时，通过将key对应节点与root进行连接以及修改tag,
 			// 实现将key对应节点的路由信息更新
 			// (注意这里并没有直接将key对应的节点群整个连接到root上,只是对单个设备的路由进行了更新)
-			if (*root).RouteTag != parent.RouteTag {
+			if root.RouteTag != parent.RouteTag {
 				// node只是个未连接的普通节点，则修改其连接关系和tag
-				r.table.Join(*root, node)
+				r.table.Join(root, node)
 				(&kong.Route{Name: key, Client: r.gateway.Client}).Update(&kong.RouteCreateOption{
 					Tags: append(defaultRouteCreateOption.Tags, (*root).RouteTag),
 				})
@@ -158,29 +194,12 @@ func (r *RouteManager) ActivateRoute(root **RouteTableNode, info *DeviceGeneralI
 		node := new(RouteTableNode)
 		r.table.Store(key, node)
 
-		if *root == nil {
-			// 初始节点为空，则初始化一个存储路由资源的初始节点
-			// (初始节点不代表任何设备，不需要向网关注册,也不在路由表中建立检索信息,
-			// 只通过访问设备路由节点的parent访问)
-			rootNode := new(RouteTableNode)
-			rootNode.UnregisterTicker = time.NewTicker(r.timeout)
-			// TODO 考虑更新channel的容量问题
-			rootNode.UpdateChannel = make(chan interface{}, 5)
-			// 利用uuid作为tag，确保相关联的路由群使用的tag唯一
-			uid, err := uuid.NewUUID()
-			if err != nil {
-				rootNode.RouteTag = fmt.Sprintf("%s%d", key, time.Now().Unix())
-			} else {
-				rootNode.RouteTag = uid.String()
-			}
-			r.eg.Go(func() error {
-				r.autoUnRegister(rootNode)
-				return nil
-			})
-			*root = rootNode
+		if root == nil {
+			// 父节点为空，则初始化一个存储路由资源的父节点
+			root = r.LoadOrCreateParentNode(clientID)
 		}
 		// 连接到root节点上
-		r.table.Join(*root, node)
+		r.table.Join(root, node)
 		// 依据root的tag,为新路由节点创建路由信息
 		option := &kong.RouteCreateOption{
 			Name:      key,
@@ -212,7 +231,7 @@ func (r *RouteManager) ActivateRoute(root **RouteTableNode, info *DeviceGeneralI
 
 // UnRegisterRoute 注销路由，包括网关路由信息与路由表中信息(将相关联的route组统一注销，用于客户端正常断联时)
 func (r *RouteManager) UnRegisterRoute(info *DeviceGeneralInfo) {
-	key := fmt.Sprintf("%s_%d_%s", conf.Username, info.DeviceClassID, info.DeviceID)
+	key := getKey(info)
 	if n, ok := r.table.Load(key); ok {
 		parent := r.table.Find(n.(*RouteTableNode))
 		// 清除路由资源
@@ -246,4 +265,8 @@ func (r *RouteManager) autoUnRegister(node *RouteTableNode) {
 		node.RouteTag = DELETED_TAG
 	}
 	node.UnregisterTicker.Stop()
+}
+
+func getKey(info *DeviceGeneralInfo) string {
+	return fmt.Sprintf("%s_%d_%s", conf.Username, info.DeviceClassID, info.DeviceID)
 }

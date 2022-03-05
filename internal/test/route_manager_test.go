@@ -75,7 +75,7 @@ func TestRouteManager(t *testing.T) {
 
 	// 激活路由，测试网关组件是否正常工作
 	t.Run("Test_Register_Gateway", func(t *testing.T) {
-		err = routeManager.ActivateRoute(new(*biz.RouteTableNode), info)
+		err = routeManager.ActivateRoute("test", info)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -113,19 +113,19 @@ func TestRouteManager(t *testing.T) {
 
 	t.Run("Test_Activate_Route", func(t *testing.T) {
 		// 第一种，传入的初始节点为空,info对应的设备信息未注册
-		root := new(*biz.RouteTableNode)
-		err = routeManager.ActivateRoute(root, info)
+		clientID1 := "test1"
+		err = routeManager.ActivateRoute(clientID1, info)
 		if err != nil {
 			t.Fatal(err)
 		}
 
 		// 第二种，传入的初始节点为空,info对应的设备信息已注册,测试初始节点是否进行了复用
-		root2 := new(*biz.RouteTableNode)
-		err = routeManager.ActivateRoute(root2, info)
+		clientID2 := "test2"
+		err = routeManager.ActivateRoute(clientID2, info)
 		if err != nil {
 			t.Fatal(err)
 		}
-		if (*root) != (*root2) {
+		if routeManager.LoadOrCreateParentNode(clientID1) != routeManager.LoadOrCreateParentNode(clientID2) {
 			t.Error("The initial node is not multiplexed")
 		}
 
@@ -134,7 +134,7 @@ func TestRouteManager(t *testing.T) {
 			DeviceClassID: 1,
 			DeviceID:      "test",
 		}
-		err = routeManager.ActivateRoute(root, info2)
+		err = routeManager.ActivateRoute(clientID1, info2)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -144,12 +144,12 @@ func TestRouteManager(t *testing.T) {
 			DeviceClassID: 2,
 			DeviceID:      "test",
 		}
-		root3 := new(*biz.RouteTableNode)
-		err = routeManager.ActivateRoute(root3, info3)
+		clientID3 := "test3"
+		err = routeManager.ActivateRoute(clientID3, info3)
 		if err != nil {
 			t.Fatal(err)
 		}
-		err = routeManager.ActivateRoute(root, info3)
+		err = routeManager.ActivateRoute(clientID1, info3)
 		if err != nil {
 			t.Fatal(err)
 		}

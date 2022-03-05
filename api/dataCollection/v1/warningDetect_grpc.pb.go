@@ -24,7 +24,7 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type WarningDetectClient interface {
 	// 设备状态信息收集服务
-	SaveDeviceStateInfo(ctx context.Context, opts ...grpc.CallOption) (WarningDetect_SaveDeviceStateInfoClient, error)
+	CreateDeviceStateInfoStream(ctx context.Context, opts ...grpc.CallOption) (WarningDetect_CreateDeviceStateInfoStreamClient, error)
 }
 
 type warningDetectClient struct {
@@ -35,30 +35,30 @@ func NewWarningDetectClient(cc grpc.ClientConnInterface) WarningDetectClient {
 	return &warningDetectClient{cc}
 }
 
-func (c *warningDetectClient) SaveDeviceStateInfo(ctx context.Context, opts ...grpc.CallOption) (WarningDetect_SaveDeviceStateInfoClient, error) {
-	stream, err := c.cc.NewStream(ctx, &WarningDetect_ServiceDesc.Streams[0], "/api.dataCollection.v1.WarningDetect/SaveDeviceStateInfo", opts...)
+func (c *warningDetectClient) CreateDeviceStateInfoStream(ctx context.Context, opts ...grpc.CallOption) (WarningDetect_CreateDeviceStateInfoStreamClient, error) {
+	stream, err := c.cc.NewStream(ctx, &WarningDetect_ServiceDesc.Streams[0], "/api.dataCollection.v1.WarningDetect/CreateDeviceStateInfoStream", opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &warningDetectSaveDeviceStateInfoClient{stream}
+	x := &warningDetectCreateDeviceStateInfoStreamClient{stream}
 	return x, nil
 }
 
-type WarningDetect_SaveDeviceStateInfoClient interface {
+type WarningDetect_CreateDeviceStateInfoStreamClient interface {
 	Send(*v1.TestedDeviceState) error
 	Recv() (*WarningDetectServiceReply, error)
 	grpc.ClientStream
 }
 
-type warningDetectSaveDeviceStateInfoClient struct {
+type warningDetectCreateDeviceStateInfoStreamClient struct {
 	grpc.ClientStream
 }
 
-func (x *warningDetectSaveDeviceStateInfoClient) Send(m *v1.TestedDeviceState) error {
+func (x *warningDetectCreateDeviceStateInfoStreamClient) Send(m *v1.TestedDeviceState) error {
 	return x.ClientStream.SendMsg(m)
 }
 
-func (x *warningDetectSaveDeviceStateInfoClient) Recv() (*WarningDetectServiceReply, error) {
+func (x *warningDetectCreateDeviceStateInfoStreamClient) Recv() (*WarningDetectServiceReply, error) {
 	m := new(WarningDetectServiceReply)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
@@ -71,7 +71,7 @@ func (x *warningDetectSaveDeviceStateInfoClient) Recv() (*WarningDetectServiceRe
 // for forward compatibility
 type WarningDetectServer interface {
 	// 设备状态信息收集服务
-	SaveDeviceStateInfo(WarningDetect_SaveDeviceStateInfoServer) error
+	CreateDeviceStateInfoStream(WarningDetect_CreateDeviceStateInfoStreamServer) error
 	mustEmbedUnimplementedWarningDetectServer()
 }
 
@@ -79,8 +79,8 @@ type WarningDetectServer interface {
 type UnimplementedWarningDetectServer struct {
 }
 
-func (UnimplementedWarningDetectServer) SaveDeviceStateInfo(WarningDetect_SaveDeviceStateInfoServer) error {
-	return status.Errorf(codes.Unimplemented, "method SaveDeviceStateInfo not implemented")
+func (UnimplementedWarningDetectServer) CreateDeviceStateInfoStream(WarningDetect_CreateDeviceStateInfoStreamServer) error {
+	return status.Errorf(codes.Unimplemented, "method CreateDeviceStateInfoStream not implemented")
 }
 func (UnimplementedWarningDetectServer) mustEmbedUnimplementedWarningDetectServer() {}
 
@@ -95,25 +95,25 @@ func RegisterWarningDetectServer(s grpc.ServiceRegistrar, srv WarningDetectServe
 	s.RegisterService(&WarningDetect_ServiceDesc, srv)
 }
 
-func _WarningDetect_SaveDeviceStateInfo_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(WarningDetectServer).SaveDeviceStateInfo(&warningDetectSaveDeviceStateInfoServer{stream})
+func _WarningDetect_CreateDeviceStateInfoStream_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(WarningDetectServer).CreateDeviceStateInfoStream(&warningDetectCreateDeviceStateInfoStreamServer{stream})
 }
 
-type WarningDetect_SaveDeviceStateInfoServer interface {
+type WarningDetect_CreateDeviceStateInfoStreamServer interface {
 	Send(*WarningDetectServiceReply) error
 	Recv() (*v1.TestedDeviceState, error)
 	grpc.ServerStream
 }
 
-type warningDetectSaveDeviceStateInfoServer struct {
+type warningDetectCreateDeviceStateInfoStreamServer struct {
 	grpc.ServerStream
 }
 
-func (x *warningDetectSaveDeviceStateInfoServer) Send(m *WarningDetectServiceReply) error {
+func (x *warningDetectCreateDeviceStateInfoStreamServer) Send(m *WarningDetectServiceReply) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-func (x *warningDetectSaveDeviceStateInfoServer) Recv() (*v1.TestedDeviceState, error) {
+func (x *warningDetectCreateDeviceStateInfoStreamServer) Recv() (*v1.TestedDeviceState, error) {
 	m := new(v1.TestedDeviceState)
 	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
@@ -130,8 +130,8 @@ var WarningDetect_ServiceDesc = grpc.ServiceDesc{
 	Methods:     []grpc.MethodDesc{},
 	Streams: []grpc.StreamDesc{
 		{
-			StreamName:    "SaveDeviceStateInfo",
-			Handler:       _WarningDetect_SaveDeviceStateInfo_Handler,
+			StreamName:    "CreateDeviceStateInfoStream",
+			Handler:       _WarningDetect_CreateDeviceStateInfoStream_Handler,
 			ServerStreams: true,
 			ClientStreams: true,
 		},

@@ -20,13 +20,3 @@ import (
 func initApp(*conf.Server, *conf.Data, log.Logger) (*kratos.App, func(), error) {
 	panic(wire.Build(server.ProviderSet, data.ProviderSet, biz.ProviderSet, service.ProviderSet, newApp))
 }
-
-// init ConfigUsecase 测试用的辅助函数
-func initConfigUsecase(*conf.Data, log.Logger) (*biz.ConfigUsecase, func(), error) {
-	panic(wire.Build(data.ProviderSet, biz.NewConfigUsecase))
-}
-
-// init WarningDetectUsecase 测试用的辅助函数
-func initWarningDetectUsecase(*conf.Data, log.Logger) (*biz.WarningDetectUsecase, func(), error) {
-	panic(wire.Build(data.ProviderSet, biz.NewWarningDetectUsecase))
-}
