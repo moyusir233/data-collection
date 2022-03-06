@@ -42,11 +42,11 @@ func NewConfigService(uc *biz.ConfigUsecase, r *biz.RouteManager, logger log.Log
 	}, nil
 }
 
-// SaveInitDeviceConfig 用于客户端上传设备初始配置信息
+// CreateInitialConfigSaveStream 用于客户端上传设备初始配置信息
 // 在保存设备初始配置时，当客户端请求头中包含clientID时，
 // 程序会为该clientID与传送过来的配置信息对应的设备建立路由资源，
 // 然后客户端可以使用该clientID建立的配置更新流，接收相应的配置更新信息
-func (s *ConfigService) SaveInitDeviceConfig(conn pb.Config_SaveInitDeviceConfigServer) error {
+func (s *ConfigService) CreateInitialConfigSaveStream(conn pb.Config_CreateInitialConfigSaveStreamServer) error {
 	// 设备类别号，代码生成时注入
 	var (
 		clientID      string

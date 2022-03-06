@@ -12,9 +12,9 @@ import (
 	"time"
 )
 
-const KONG_PROXY_ADDRESS = "http://kong.test.svc.cluster.local:8000"
-
 func TestRouteManager(t *testing.T) {
+	const KONG_PROXY_ADDRESS = "http://kong.test.svc.cluster.local:8000"
+
 	// 测试RouteManager注册与注销网关组件的功能
 
 	// 初始化测试所需组件

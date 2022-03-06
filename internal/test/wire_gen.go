@@ -10,10 +10,38 @@ import (
 	"gitee.com/moyusir/dataCollection/internal/biz"
 	"gitee.com/moyusir/dataCollection/internal/conf"
 	"gitee.com/moyusir/dataCollection/internal/data"
+	"gitee.com/moyusir/dataCollection/internal/server"
+	"gitee.com/moyusir/dataCollection/internal/service"
+	"github.com/go-kratos/kratos/v2"
 	"github.com/go-kratos/kratos/v2/log"
 )
 
 // Injectors from wire.go:
+
+// initApp init kratos application.
+func initApp(confServer *conf.Server, confData *conf.Data, logger log.Logger) (*kratos.App, func(), error) {
+	dataData, cleanup, err := data.NewData(confData, logger)
+	if err != nil {
+		return nil, nil, err
+	}
+	unionRepo := data.NewRedisRepo(dataData, logger)
+	configUsecase := biz.NewConfigUsecase(unionRepo, logger)
+	routeManager := biz.NewRouteManager(confServer)
+	configService, cleanup2, err := service.NewConfigService(configUsecase, routeManager, logger)
+	if err != nil {
+		cleanup()
+		return nil, nil, err
+	}
+	httpServer := server.NewHTTPServer(confServer, configService, logger)
+	warningDetectUsecase := biz.NewWarningDetectUsecase(unionRepo, logger)
+	warningDetectService := service.NewWarningDetectService(warningDetectUsecase, routeManager, logger)
+	grpcServer := server.NewGRPCServer(confServer, configService, warningDetectService, logger)
+	app := newApp(logger, httpServer, grpcServer)
+	return app, func() {
+		cleanup2()
+		cleanup()
+	}, nil
+}
 
 // InitConfigUsecase 测试用的辅助函数
 func InitConfigUsecase(confData *conf.Data, logger log.Logger) (*biz.ConfigUsecase, func(), error) {

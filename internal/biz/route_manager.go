@@ -149,7 +149,7 @@ func (r *RouteManager) LoadOrCreateParentNode(clientID string) *RouteTableNode {
 
 // GetDeviceUpdateChannel 查找设备对应的配置更新channel
 func (r *RouteManager) GetDeviceUpdateChannel(info *DeviceGeneralInfo) (chan<- interface{}, bool) {
-	node, ok := r.table.Load(getKey(info))
+	node, ok := r.table.Load(GetKey(info))
 	if ok {
 		return r.table.Find(node.(*RouteTableNode)).UpdateChannel, true
 	} else {
@@ -167,7 +167,7 @@ func (r *RouteManager) ActivateRoute(clientID string, info *DeviceGeneralInfo) e
 		root = n.(*RouteTableNode)
 	}
 
-	key := getKey(info)
+	key := GetKey(info)
 	var err error
 	if n, ok := r.table.Load(key); ok {
 		node := n.(*RouteTableNode)
@@ -231,7 +231,7 @@ func (r *RouteManager) ActivateRoute(clientID string, info *DeviceGeneralInfo) e
 
 // UnRegisterRoute 注销路由，包括网关路由信息与路由表中信息(将相关联的route组统一注销，用于客户端正常断联时)
 func (r *RouteManager) UnRegisterRoute(info *DeviceGeneralInfo) {
-	key := getKey(info)
+	key := GetKey(info)
 	if n, ok := r.table.Load(key); ok {
 		parent := r.table.Find(n.(*RouteTableNode))
 		// 清除路由资源
@@ -267,6 +267,7 @@ func (r *RouteManager) autoUnRegister(node *RouteTableNode) {
 	node.UnregisterTicker.Stop()
 }
 
-func getKey(info *DeviceGeneralInfo) string {
+// GetKey 辅助函数
+func GetKey(info *DeviceGeneralInfo) string {
 	return fmt.Sprintf("%s_%d_%s", conf.Username, info.DeviceClassID, info.DeviceID)
 }

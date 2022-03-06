@@ -12,7 +12,7 @@ option java_package = "api.dataCollection.v1";
 // 预警检测服务，主要包括数据收集部分
 service WarningDetect {
     // 设备状态信息收集服务
-    rpc CreateDeviceStateInfoStream(stream api.util.v1.TestedDeviceState) returns (stream WarningDetectServiceReply);
+    rpc CreateStateInfoSaveStream(stream api.util.v1.TestedDeviceState) returns (stream WarningDetectServiceReply);
 }
 
 message WarningDetectServiceReply {

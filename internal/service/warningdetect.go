@@ -28,11 +28,11 @@ func NewWarningDetectService(uc *biz.WarningDetectUsecase, r *biz.RouteManager, 
 	}
 }
 
-// CreateDeviceStateInfoStream 创建传输设备状态信息的数据流
+// CreateStateInfoSaveStream 创建传输设备状态信息的数据流
 // 程序会优先使用请求头中包含的clientID进行路由信息的创建，
 // 当请求头中不包含clientID时，则会重新建立一个clientID。
 // 本次数据流中使用的clientID会通过响应头发送给客户端
-func (s *WarningDetectService) CreateDeviceStateInfoStream(conn pb.WarningDetect_CreateDeviceStateInfoStreamServer) error {
+func (s *WarningDetectService) CreateStateInfoSaveStream(conn pb.WarningDetect_CreateStateInfoSaveStreamServer) error {
 	var (
 		clientID string
 		// 设备类别号，代码生成时注入
