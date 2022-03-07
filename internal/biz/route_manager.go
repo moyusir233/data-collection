@@ -255,6 +255,7 @@ func (r *RouteManager) UnRegisterRoute(info *DeviceGeneralInfo) {
 // 自动注销仅仅是将节点对应的若干route信息注销，并将节点的RouteTag标志为已删除的tag
 // 而不会删除节点在路由表中存储的信息，只有当协程检测到客户端的连接正常断开时
 // 才会进行节点的路由注销以及节点信息的删除操作，包括关闭其配置更新channel等
+// TODO 考虑定时器函数是否需要清理路由表中的键值对信息
 func (r *RouteManager) autoUnRegister(node *RouteTableNode) {
 	select {
 	case <-node.UnregisterTicker.C:
