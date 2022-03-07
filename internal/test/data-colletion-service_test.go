@@ -29,7 +29,7 @@ func TestDataCollectionService(t *testing.T) {
 	// 3. 测试模拟出现客户端掉线时，利用新得到的clientID上传原先的设备信息(clientID存在，新设备路由更新的分支)
 	// 4. 测试不使用clientID建立设备传输连接,然后上传之前未上传过的设备信息
 	//    (此时服务器会创建一个未注册的clientID进行路由信息的配置，因此对应clientID不存在，设备信息未注册的分支)
-	// 5. 测试不使用clientID建立设备传输连接,然后上传之前未上传过的设备信息
+	// 5. 测试不使用clientID建立设备传输连接,然后上传之前上传过的设备信息
 	//    (与上述情况类似，不过此时会为不存在的clientID复用之前的父节点，对应着clientID不存在，设备信息已注册的分支)
 	// 6. 测试路由自动注销功能
 
@@ -525,15 +525,83 @@ initClient:
 		}
 	})
 
+	// 由于第四个子测试与第五个子测试类似，这里定义一个辅助函数
+
+	testUseUnknownClientID := func(t *testing.T, deviceIDs ...string) {
+		// 直接创建设备状态数据流,获得服务端创建的clientID
+		infoSaveStream, clientID, err := createStateInfoStream(t, "")
+		if err != nil {
+			t.Error(err)
+			return
+		}
+
+		// 定义之前测试没有传输过的设备信息进行传输
+		states := make([]*utilApi.TestedDeviceState, len(deviceIDs))
+		for i, s := range states {
+			s.Id = deviceIDs[i]
+		}
+
+		for _, s := range states {
+			err := infoSaveStream.Send(s)
+			if err != nil {
+				t.Error(err)
+				return
+			}
+		}
+
+		// 然后通过发送http请求以及建立设备更新流接收配置更新消息，验证路由配置是否有效
+		configs := make([]*utilApi.TestedDeviceConfig, len(deviceIDs))
+		for i, c := range configs {
+			c.Id = deviceIDs[i]
+		}
+
+		if err := sendUpdateConfigRequest(configs...); err != nil {
+			t.Error(err)
+			return
+		}
+
+		updateStream, _, err := createConfigUpdateStream(t, clientID)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+
+		for _, c := range configs {
+			config, err := updateStream.Recv()
+			if err != nil {
+				t.Error(err)
+				return
+			}
+
+			if !proto.Equal(c, config) {
+				t.Error("The config update information sent by the HTTP request was not pushed correctly")
+			}
+		}
+	}
+
 	// 4. 测试不使用clientID建立设备传输连接,然后上传之前未上传过的设备信息
 	//    (此时服务器会创建一个未注册的clientID进行路由信息的配置，因此对应clientID不存在，设备信息未注册的分支)
 	t.Run("Test_UseUnknownClientIDSendUnKnownDevice", func(t *testing.T) {
-
+		testUseUnknownClientID(t, "test7", "test8")
 	})
 
-	// 5. 测试不使用clientID建立设备传输连接,然后上传之前未上传过的设备信息
+	// 5. 测试不使用clientID建立设备传输连接,然后上传之前上传过的设备信息
 	//    (与上述情况类似，不过此时会为不存在的clientID复用之前的父节点，对应着clientID不存在，设备信息已注册的分支)
 	t.Run("Test_UseUnknownClientIDSendDevice", func(t *testing.T) {
+		testUseUnknownClientID(t, "test4", "test5", "test6")
+	})
 
+	// 6. 测试路由自动注销功能
+	t.Run("Test_AutoUnregisterRoute", func(t *testing.T) {
+		// 之前测试中clientID1仍保存着test3设备的路由信息
+		// 这里拿来测试路由自动注销
+		// 等待路由自动注销触发
+		time.Sleep(time.Second)
+
+		err := sendUpdateConfigRequest(&utilApi.TestedDeviceConfig{Id: "test3"})
+		if err == nil {
+			t.Error("Failed to automatically unregister overtime route")
+			return
+		}
 	})
 }
