@@ -3,6 +3,7 @@ package test
 import (
 	"context"
 	"errors"
+	"fmt"
 	v1 "gitee.com/moyusir/dataCollection/api/dataCollection/v1"
 	"gitee.com/moyusir/dataCollection/internal/biz"
 	"gitee.com/moyusir/dataCollection/internal/conf"
@@ -57,7 +58,7 @@ func TestDataCollectionService(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	logger := log.DefaultLogger
+	logger := log.NewStdLogger(os.Stdout)
 	app, cleanUp, err := initApp(bootstrap.Server, bootstrap.Data, logger)
 	if err != nil {
 		t.Fatal(err)
@@ -166,6 +167,7 @@ initClient:
 		createStateInfoStream    func(t *testing.T, cid string) (stream v1.WarningDetect_CreateStateInfoSaveStreamClient, clientID string, err error)
 		createInitConfigStream   func(t *testing.T, cid string) (stream v1.Config_CreateInitialConfigSaveStreamClient, err error)
 		sendUpdateConfigRequest  func(configs ...*utilApi.TestedDeviceConfig) error
+		checkRecvConfig          func(stream v1.Config_CreateConfigUpdateStreamClient, configs ...*utilApi.TestedDeviceConfig) error
 	)
 
 	// 创建配置更新流的辅助函数
@@ -185,9 +187,6 @@ initClient:
 		if err != nil {
 			return nil, "", err
 		}
-		t.Cleanup(func() {
-			stream.CloseSend()
-		})
 
 		// 当传入的cid为空时，需要从响应头中获得服务器创建的clientID
 		if cid == "" {
@@ -221,6 +220,7 @@ initClient:
 			return nil, "", err
 		}
 		t.Cleanup(func() {
+			// 关闭客户端发送流，并接收reply，判断初始设备配置信息是否传输成功
 			stream.CloseSend()
 		})
 
@@ -252,7 +252,14 @@ initClient:
 			return nil, err
 		}
 		t.Cleanup(func() {
-			stream.CloseSend()
+			reply, err := stream.CloseAndRecv()
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			if !reply.Success {
+				err = errors.New("failed to send the initial config of device")
+			}
 		})
 		return
 	}
@@ -275,7 +282,38 @@ initClient:
 				return err
 			}
 			if !reply.Success {
-				return errors.New("Failed to send the request which updates the device config")
+				return errors.New("failed to send the request which updates the device config")
+			}
+		}
+		return nil
+	}
+
+	// 检查配置更新流推送的更新消息是否正确的辅助函数
+	checkRecvConfig = func(stream v1.Config_CreateConfigUpdateStreamClient, configs ...*utilApi.TestedDeviceConfig) error {
+		// 检查更新流中接收到的配置更新消息与http发送的是否一致
+		for i, c := range configs {
+			config, err := stream.Recv()
+			if err != nil {
+				return err
+			}
+
+			// 发送答复，告知服务端接收成功
+			// 当发送最后一条信息时，告诉服务端可以结束连接
+			reply := &v1.ConfigUpdateReply{Success: true, End: false}
+			if i == len(configs)-1 {
+				reply.End = true
+			}
+			err = stream.Send(reply)
+			if err != nil {
+				return err
+			}
+
+			if !proto.Equal(c, config) {
+				msg := fmt.Sprintf(
+					"the config update information sent by the HTTP request was not pushed correctly: %v %v",
+					*c, *config,
+				)
+				return errors.New(msg)
 			}
 		}
 		return nil
@@ -332,16 +370,9 @@ initClient:
 		}
 
 		// 检查更新流中接收到的配置更新消息与http发送的是否一致
-		for _, c := range configs {
-			config, err := updateStream.Recv()
-			if err != nil {
-				t.Error(err)
-				return
-			}
-
-			if !proto.Equal(c, config) {
-				t.Error("The config update information sent by the HTTP request was not pushed correctly")
-			}
+		if err := checkRecvConfig(updateStream, configs...); err != nil {
+			t.Error(err)
+			return
 		}
 	})
 
@@ -406,6 +437,17 @@ initClient:
 				t.Error(err)
 				return
 			}
+
+			// 接收答复信息，判断是否出现错误
+			reply, err := stateSaveStream.Recv()
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			if !reply.Success {
+				t.Error(errors.New("failed to send device state info"))
+				return
+			}
 		}
 
 		// 上传完毕后，尝试发送http请求更新配置信息
@@ -418,16 +460,9 @@ initClient:
 		}
 
 		// 检查更新流中接收到的配置更新消息与http发送的是否一致
-		for _, c := range configs {
-			config, err := updateStream.Recv()
-			if err != nil {
-				t.Error(err)
-				return
-			}
-
-			if !proto.Equal(c, config) {
-				t.Error("The config update information sent by the HTTP request was not pushed correctly")
-			}
+		if err := checkRecvConfig(updateStream, configs...); err != nil {
+			t.Error(err)
+			return
 		}
 	})
 
@@ -439,14 +474,14 @@ initClient:
 	// 3. 测试模拟出现客户端掉线时，利用新得到的clientID上传原先的设备信息(clientID存在，新设备路由更新的分支)
 	t.Run("Test_UpdateRouteInfoByChangeClientID", func(t *testing.T) {
 		// 创建配置更新流，获得clientID
-		updateStream, clientID, err := createConfigUpdateStream(t, "")
+		newUpdateStream, clientID, err := createConfigUpdateStream(t, "")
 		if err != nil {
 			t.Error(err)
 			return
 		}
 
 		// 使用获得的clientID上传配置信息
-		stream, err := createInitConfigStream(t, clientID)
+		initConfigStream, err := createInitConfigStream(t, clientID)
 		if err != nil {
 			t.Error(err)
 			return
@@ -466,7 +501,7 @@ initClient:
 		}
 
 		for _, c := range configs {
-			err := stream.Send(c)
+			err := initConfigStream.Send(c)
 			if err != nil {
 				return
 			}
@@ -482,22 +517,15 @@ initClient:
 		}
 
 		// 检查更新流中接收到的配置更新消息与http发送的是否一致
-		for _, c := range configs {
-			config, err := updateStream.Recv()
-			if err != nil {
-				t.Error(err)
-				return
-			}
-
-			if !proto.Equal(c, config) {
-				t.Error("The config update information sent by the HTTP request was not pushed correctly")
-			}
+		if err := checkRecvConfig(newUpdateStream, configs...); err != nil {
+			t.Error(err)
+			return
 		}
 
 		// 测试在路由更新后，原来clientID1的路由是否还能正常使用
 
 		// 创建clientID1对应的配置更新流
-		configUpdateStream, _, err := createConfigUpdateStream(t, clientID1)
+		oldUpdateStream, _, err := createConfigUpdateStream(t, clientID1)
 		if err != nil {
 			t.Error(err)
 			return
@@ -514,14 +542,10 @@ initClient:
 			return
 		}
 
-		// 检查发送的配置更新信息与接收的是否一致
-		c, err := configUpdateStream.Recv()
-		if err != nil {
+		// 检查更新流中接收到的配置更新消息与http发送的是否一致
+		if err := checkRecvConfig(oldUpdateStream, config); err != nil {
 			t.Error(err)
 			return
-		}
-		if !proto.Equal(c, config) {
-			t.Error("The config update information sent by the HTTP request was not pushed correctly")
 		}
 	})
 
@@ -529,7 +553,7 @@ initClient:
 
 	testUseUnknownClientID := func(t *testing.T, deviceIDs ...string) {
 		// 直接创建设备状态数据流,获得服务端创建的clientID
-		infoSaveStream, clientID, err := createStateInfoStream(t, "")
+		stateSaveStream, clientID, err := createStateInfoStream(t, "")
 		if err != nil {
 			t.Error(err)
 			return
@@ -537,24 +561,37 @@ initClient:
 
 		// 定义之前测试没有传输过的设备信息进行传输
 		states := make([]*utilApi.TestedDeviceState, len(deviceIDs))
-		for i, s := range states {
-			s.Id = deviceIDs[i]
+		for i, id := range deviceIDs {
+			states[i] = &utilApi.TestedDeviceState{Id: id}
 		}
 
 		for _, s := range states {
-			err := infoSaveStream.Send(s)
+			err := stateSaveStream.Send(s)
 			if err != nil {
 				t.Error(err)
+				return
+			}
+
+			// 接收答复信息，判断是否出现错误
+			reply, err := stateSaveStream.Recv()
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			if !reply.Success {
+				t.Error(errors.New("failed to send device state info"))
 				return
 			}
 		}
 
 		// 然后通过发送http请求以及建立设备更新流接收配置更新消息，验证路由配置是否有效
 		configs := make([]*utilApi.TestedDeviceConfig, len(deviceIDs))
-		for i, c := range configs {
-			c.Id = deviceIDs[i]
+		for i, id := range deviceIDs {
+			configs[i] = &utilApi.TestedDeviceConfig{Id: id}
 		}
 
+		// 等待组件注册
+		time.Sleep(time.Second)
 		if err := sendUpdateConfigRequest(configs...); err != nil {
 			t.Error(err)
 			return
@@ -566,16 +603,10 @@ initClient:
 			return
 		}
 
-		for _, c := range configs {
-			config, err := updateStream.Recv()
-			if err != nil {
-				t.Error(err)
-				return
-			}
-
-			if !proto.Equal(c, config) {
-				t.Error("The config update information sent by the HTTP request was not pushed correctly")
-			}
+		// 检查更新流中接收到的配置更新消息与http发送的是否一致
+		if err := checkRecvConfig(updateStream, configs...); err != nil {
+			t.Error(err)
+			return
 		}
 	}
 
@@ -596,7 +627,7 @@ initClient:
 		// 之前测试中clientID1仍保存着test3设备的路由信息
 		// 这里拿来测试路由自动注销
 		// 等待路由自动注销触发
-		time.Sleep(time.Second)
+		time.Sleep(bootstrap.Server.Gateway.RouteTimeout.AsDuration())
 
 		err := sendUpdateConfigRequest(&utilApi.TestedDeviceConfig{Id: "test3"})
 		if err == nil {

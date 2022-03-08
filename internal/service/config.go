@@ -51,7 +51,6 @@ func (s *ConfigService) CreateInitialConfigSaveStream(conn pb.Config_CreateIniti
 	var (
 		clientID      string
 		deviceClassID = 0
-		info          = &biz.DeviceGeneralInfo{DeviceClassID: deviceClassID}
 	)
 
 	// 检查请求头中是否包含clientID
@@ -69,6 +68,7 @@ func (s *ConfigService) CreateInitialConfigSaveStream(conn pb.Config_CreateIniti
 		}
 
 		// 提取设备基本信息进行保存或路由的激活
+		info := &biz.DeviceGeneralInfo{DeviceClassID: deviceClassID}
 		info.DeviceID = config.Id
 
 		// 若clientID不为空，则建立关于该clientID的路由信息
@@ -94,7 +94,9 @@ func (s *ConfigService) CreateInitialConfigSaveStream(conn pb.Config_CreateIniti
 func (s *ConfigService) CreateConfigUpdateStream(conn pb.Config_CreateConfigUpdateStreamServer) error {
 	var (
 		clientID      string
-		updateChannel <-chan interface{}
+		updateChannel chan interface{}
+		deviceClassID = 0
+		info          = &biz.DeviceGeneralInfo{DeviceClassID: deviceClassID}
 	)
 
 	// 首先从客户端流请求头中提取clientID，允许客户端复用clientID,
@@ -124,10 +126,16 @@ func (s *ConfigService) CreateConfigUpdateStream(conn pb.Config_CreateConfigUpda
 	updateChannel = s.manager.LoadOrCreateParentNode(clientID).UpdateChannel
 
 	// 不断从相应的channel中获得配置更新信息，并发送给客户端
+	/* TODO 修改推送配置更新消息的实现逻辑，要确保客户端发送了关闭连接的消息后，协程即立刻结束，而不是继续保持读取
+	   updateChannel的状态，这样会导致用户下次发送更新请求时，会有单个配置更新消息发送被已经该结束的协程处理掉
+	*/
+
 	for c := range updateChannel {
 		config := c.(*util.TestedDeviceConfig)
 		err := conn.Send(config)
 		if err != nil {
+			// TODO 考虑发送失败时，是否需要将配置更新消息存储回channel
+			updateChannel <- config
 			return err
 		}
 		reply, err := conn.Recv()
@@ -140,7 +148,19 @@ func (s *ConfigService) CreateConfigUpdateStream(conn pb.Config_CreateConfigUpda
 		// 当客户端给出发送不成功的答复时，尝试重发一次
 		// TODO 考虑配置最大重发次数?
 		if !reply.Success {
-			conn.Send(config)
+			// 当发送不成功，将更新信息放回channel，至下一次循环进行处理
+			updateChannel <- config
+		} else {
+			// TODO 考虑设备配置保存失败时如何处理
+			info.DeviceID = config.Id
+			err := s.uc.SaveDeviceConfig(info, config)
+			if err != nil {
+				return err
+			}
+		}
+		// 客户端表示需要断开连接
+		if reply.End {
+			break
 		}
 	}
 	return nil

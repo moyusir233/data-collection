@@ -37,7 +37,6 @@ func (s *WarningDetectService) CreateStateInfoSaveStream(conn pb.WarningDetect_C
 		clientID string
 		// 设备类别号，代码生成时注入
 		deviceClassID = 0
-		info          = &biz.DeviceGeneralInfo{DeviceClassID: deviceClassID}
 		// 设备预警字段，代码生成时注入
 		fields = map[string]float64{
 			"Voltage": 0,
@@ -77,6 +76,7 @@ func (s *WarningDetectService) CreateStateInfoSaveStream(conn pb.WarningDetect_C
 		}
 
 		// 提取设备状态信息进行路由激活以及保存
+		info := &biz.DeviceGeneralInfo{DeviceClassID: deviceClassID}
 		info.DeviceID = state.Id
 		// TODO 这里不应该使用反射去提取值，而是通过代码生成提取
 		fields["Voltage"] = state.Voltage

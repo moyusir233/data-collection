@@ -58,7 +58,7 @@ func (c *configClient) CreateConfigUpdateStream(ctx context.Context, opts ...grp
 }
 
 type Config_CreateConfigUpdateStreamClient interface {
-	Send(*ConfigServiceReply) error
+	Send(*ConfigUpdateReply) error
 	Recv() (*v1.TestedDeviceConfig, error)
 	grpc.ClientStream
 }
@@ -67,7 +67,7 @@ type configCreateConfigUpdateStreamClient struct {
 	grpc.ClientStream
 }
 
-func (x *configCreateConfigUpdateStreamClient) Send(m *ConfigServiceReply) error {
+func (x *configCreateConfigUpdateStreamClient) Send(m *ConfigUpdateReply) error {
 	return x.ClientStream.SendMsg(m)
 }
 
@@ -176,7 +176,7 @@ func _Config_CreateConfigUpdateStream_Handler(srv interface{}, stream grpc.Serve
 
 type Config_CreateConfigUpdateStreamServer interface {
 	Send(*v1.TestedDeviceConfig) error
-	Recv() (*ConfigServiceReply, error)
+	Recv() (*ConfigUpdateReply, error)
 	grpc.ServerStream
 }
 
@@ -188,8 +188,8 @@ func (x *configCreateConfigUpdateStreamServer) Send(m *v1.TestedDeviceConfig) er
 	return x.ServerStream.SendMsg(m)
 }
 
-func (x *configCreateConfigUpdateStreamServer) Recv() (*ConfigServiceReply, error) {
-	m := new(ConfigServiceReply)
+func (x *configCreateConfigUpdateStreamServer) Recv() (*ConfigUpdateReply, error) {
+	m := new(ConfigUpdateReply)
 	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
 	}

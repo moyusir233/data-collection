@@ -184,7 +184,17 @@ func (r *RouteManager) ActivateRoute(clientID string, info *DeviceGeneralInfo) e
 				// node只是个未连接的普通节点，则修改其连接关系和tag
 				r.table.Join(root, node)
 				(&kong.Route{Name: key, Client: r.gateway.Client}).Update(&kong.RouteCreateOption{
-					Tags: append(defaultRouteCreateOption.Tags, (*root).RouteTag),
+					Name:      key,
+					Protocols: defaultRouteCreateOption.Protocols,
+					Methods:   defaultRouteCreateOption.Methods,
+					Hosts:     defaultRouteCreateOption.Hosts,
+					Paths:     defaultRouteCreateOption.Paths,
+					Headers: map[string][]string{
+						"X-Device-ID": {key},
+					},
+					StripPath: defaultRouteCreateOption.StripPath,
+					Service:   defaultRouteCreateOption.Service,
+					Tags:      append(defaultRouteCreateOption.Tags, (*root).RouteTag),
 				})
 			}
 		}

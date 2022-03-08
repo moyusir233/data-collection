@@ -44,13 +44,13 @@ func (r *RedisRepo) SaveDeviceState(state *biz.DeviceState, fields ...*biz.Devic
 			Member: v,
 		})
 		if len(fields) > 0 {
-			args := make([]interface{}, 0, len(fields)*3+1)
-			args = append(args, "TS.MADD")
 			t := time.Now().Unix()
 			for _, f := range fields {
+				args := make([]interface{}, 0, len(fields)*3+1)
+				args = append(args, "TS.ADD")
 				args = append(args, f.Key, t, f.Value)
+				p.Do(context.Background(), args...)
 			}
-			p.Do(context.Background(), args...)
 		}
 		return nil
 	})
