@@ -33,13 +33,20 @@ func GetDeviceStateKey(info *DeviceGeneralInfo) string {
 	return fmt.Sprintf("%s:device_state:%d", conf.Username, info.DeviceClassID)
 }
 
-// GetDeviceStateFieldKey 每个预警字段保存到以<用户id>:device_state:<设备类别号>:<设备字段名>:<设备id>的为key的ts中
-func GetDeviceStateFieldKey(info *DeviceGeneralInfo, fieldName string) string {
-	return fmt.Sprintf(
+// GetDeviceStateFieldKeyAndLabel 每个预警字段保存到以<用户id>:device_state:<设备类别号>:<设备字段名>:<设备id>为key，
+// 以<用户id>:<设备类别号>:<字段名>为LABEL的ts中
+func GetDeviceStateFieldKeyAndLabel(info *DeviceGeneralInfo, fieldName string) (key, label string) {
+	key = fmt.Sprintf(
 		"%s:device_state:%d:%s:%s",
 		conf.Username,
 		info.DeviceClassID,
 		fieldName,
 		info.DeviceID,
 	)
+	label = fmt.Sprintf("%s:%d:%s",
+		conf.Username,
+		info.DeviceClassID,
+		fieldName,
+	)
+	return
 }

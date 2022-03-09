@@ -49,6 +49,13 @@ func (r *RedisRepo) SaveDeviceState(state *biz.DeviceState, fields ...*biz.Devic
 				args := make([]interface{}, 0, len(fields)*3+1)
 				args = append(args, "TS.ADD")
 				args = append(args, f.Key, t, f.Value)
+
+				// 当字段对应的ts未被创建时，以下设置的参数会被用于ts的创建
+
+				// 设置ts中数据的时间戳最大跨度,redis会根据这个值自动对ts执行trim操作
+				args = append(args, "RETENTION", r.client.retention.Milliseconds())
+				// 设置ts的标签
+				args = append(args, "LABELS", f.Label)
 				p.Do(context.Background(), args...)
 			}
 		}

@@ -11,6 +11,21 @@ import (
 )
 
 func TestData_RedisRepo(t *testing.T) {
+	// 初始化测试所需环境变量
+	envs := map[string]string{
+		"USERNAME":           "test",
+		"DEVICE_CLASS_COUNT": "",
+		"SERVICE_NAME":       "",
+		"SERVICE_HOST":       "",
+		"APP_DOMAIN_NAME":    "",
+	}
+	for k, v := range envs {
+		err := os.Setenv(k, v)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+
 	// 初始化redis连接
 	bc, err := conf.LoadConfig("../../configs/config.yaml")
 	if err != nil {
@@ -55,10 +70,12 @@ func TestData_RedisRepo(t *testing.T) {
 				{
 					Key:   t.Name() + "_Field1",
 					Value: 1,
+					Label: "label1",
 				},
 				{
 					Key:   t.Name() + "_Field2",
 					Value: 2,
+					Label: "label2",
 				},
 			}
 		)
@@ -69,19 +86,13 @@ func TestData_RedisRepo(t *testing.T) {
 				client.Del(context.Background(), f.Key)
 			}
 		})
-		// 创建ts
-		for _, f := range fields {
-			err := client.Do(context.Background(), "TS.CREATE", f.Key).Err()
-			if err != nil {
-				t.Error(err)
-				return
-			}
-		}
+
 		err := redisRepo.SaveDeviceState(state, fields...)
 		if err != nil {
 			t.Error(err)
 			return
 		}
+
 		// 通过查询操作测试上述的保存操作是否成功
 		// 查询对应zset的size
 		result, err := client.ZCard(context.Background(), state.Key).Result()
@@ -90,13 +101,21 @@ func TestData_RedisRepo(t *testing.T) {
 		} else if result == 0 {
 			t.Error("The corresponding Zset capacity is 0")
 		}
-		// 查询每个field对应的ts是否为空
+		// 利用key以及label查询每个field对应的ts是否为空
 		for _, f := range fields {
+			// 利用key
 			result, err := client.Do(context.Background(), "TS.GET", f.Key).Slice()
 			if err != nil {
 				t.Error(err)
 			} else if len(result) == 0 {
 				t.Error("The corresponding Ts capacity is 0")
+			}
+			// 利用label
+			result, err = client.Do(context.Background(), "TS.MGET", "FILTER", "l="+f.Label).Slice()
+			if err != nil {
+				t.Error(err)
+			} else if len(result) == 0 {
+				t.Error("The corresponding labeled Ts capacity is 0")
 			}
 		}
 	})

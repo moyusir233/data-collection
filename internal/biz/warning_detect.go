@@ -25,6 +25,7 @@ type DeviceState struct {
 type DeviceStateField struct {
 	Key   string
 	Value float64
+	Label string
 }
 
 func NewWarningDetectUsecase(repo UnionRepo, logger log.Logger) *WarningDetectUsecase {
@@ -48,10 +49,12 @@ func (u *WarningDetectUsecase) SaveDeviceState(info *DeviceGeneralInfo, state pr
 		return err
 	}
 	s.Value = marshal
+
 	for k, v := range fields {
 		field := new(DeviceStateField)
-		// 每个预警字段保存到以<用户id>:device_state:<设备类别号>:<设备字段名>:<设备id>的ts中
-		field.Key = GetDeviceStateFieldKey(info, k)
+		// 每个预警字段保存到以<用户id>:device_state:<设备类别号>:<设备字段名>:<设备id>为key，
+		// 以<用户id>:<设备类别号>:<字段名>为LABEL的ts中
+		field.Key, field.Label = GetDeviceStateFieldKeyAndLabel(info, k)
 		field.Value = v
 		f = append(f, field)
 	}

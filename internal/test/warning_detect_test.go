@@ -9,12 +9,28 @@ import (
 	v1 "gitee.com/moyusir/util/api/util/v1"
 	"github.com/go-kratos/kratos/v2/log"
 	"google.golang.org/protobuf/proto"
+	"os"
 	"strconv"
 	"strings"
 	"testing"
 )
 
 func TestBiz_WarningDetectUsecase_SaveDeviceState(t *testing.T) {
+	// 初始化测试所需环境变量
+	envs := map[string]string{
+		"USERNAME":           "test",
+		"DEVICE_CLASS_COUNT": "",
+		"SERVICE_NAME":       "",
+		"SERVICE_HOST":       "",
+		"APP_DOMAIN_NAME":    "",
+	}
+	for k, v := range envs {
+		err := os.Setenv(k, v)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+
 	bc, err := conf.LoadConfig("../../configs/config.yaml")
 	if err != nil {
 		t.Fatal(err)
@@ -50,14 +66,10 @@ func TestBiz_WarningDetectUsecase_SaveDeviceState(t *testing.T) {
 	t.Cleanup(func() {
 		client.Del(context.Background(), biz.GetDeviceStateKey(info))
 		for k, _ := range fields {
-			client.Del(context.Background(), biz.GetDeviceStateFieldKey(info, k))
+			key, _ := biz.GetDeviceStateFieldKeyAndLabel(info, k)
+			client.Del(context.Background(), key)
 		}
 	})
-
-	// 提前创建fields需要的ts
-	for k, _ := range fields {
-		client.Do(context.Background(), "TS.CREATE", biz.GetDeviceStateFieldKey(info, k))
-	}
 
 	err = usecase.SaveDeviceState(info, &state, fields)
 	if err != nil {
@@ -80,7 +92,7 @@ func TestBiz_WarningDetectUsecase_SaveDeviceState(t *testing.T) {
 
 	// 通过查询每个字段对应ts的值并比较，判断保存是否成功
 	for k, v := range fields {
-		key := biz.GetDeviceStateFieldKey(info, k)
+		key, _ := biz.GetDeviceStateFieldKeyAndLabel(info, k)
 		slice, err := client.Do(context.Background(), "TS.GET", key).Slice()
 		if err != nil {
 			t.Error(err)

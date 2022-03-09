@@ -46,6 +46,8 @@ message Data {
         int64 pool_size = 5;
         // redis连接池的最小空闲连接数
         int64 min_idle_conns = 6;
+        // ts的RETENTION参数
+        google.protobuf.Duration ts_retention=7;
     }
     Redis redis = 1;
 }
