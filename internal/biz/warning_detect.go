@@ -5,6 +5,9 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+// WarningDetectFieldLabelName 在创建设备预警字段相应ts的标签时使用的标签名
+const WarningDetectFieldLabelName = "field_id"
+
 type WarningDetectUsecase struct {
 	repo   WarningDetectRepo
 	logger *log.Helper
@@ -53,7 +56,7 @@ func (u *WarningDetectUsecase) SaveDeviceState(info *DeviceGeneralInfo, state pr
 	for k, v := range fields {
 		field := new(DeviceStateField)
 		// 每个预警字段保存到以<用户id>:device_state:<设备类别号>:<设备字段名>:<设备id>为key，
-		// 以<用户id>:<设备类别号>:<字段名>为LABEL的ts中
+		// 以<用户id>:<设备类别号>:<字段名>为标签值的ts中
 		field.Key, field.Label = GetDeviceStateFieldKeyAndLabel(info, k)
 		field.Value = v
 		f = append(f, field)

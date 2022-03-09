@@ -34,7 +34,7 @@ func GetDeviceStateKey(info *DeviceGeneralInfo) string {
 }
 
 // GetDeviceStateFieldKeyAndLabel 每个预警字段保存到以<用户id>:device_state:<设备类别号>:<设备字段名>:<设备id>为key，
-// 以<用户id>:<设备类别号>:<字段名>为LABEL的ts中
+// 以field_id为标签名，以<用户id>:<设备类别号>:<字段名>为标签值的ts中
 func GetDeviceStateFieldKeyAndLabel(info *DeviceGeneralInfo, fieldName string) (key, label string) {
 	key = fmt.Sprintf(
 		"%s:device_state:%d:%s:%s",

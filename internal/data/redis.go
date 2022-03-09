@@ -55,7 +55,7 @@ func (r *RedisRepo) SaveDeviceState(state *biz.DeviceState, fields ...*biz.Devic
 				// 设置ts中数据的时间戳最大跨度,redis会根据这个值自动对ts执行trim操作
 				args = append(args, "RETENTION", r.client.retention.Milliseconds())
 				// 设置ts的标签
-				args = append(args, "LABELS", f.Label)
+				args = append(args, "LABELS", biz.WarningDetectFieldLabelName, f.Label)
 				p.Do(context.Background(), args...)
 			}
 		}

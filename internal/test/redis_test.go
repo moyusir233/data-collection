@@ -111,7 +111,7 @@ func TestData_RedisRepo(t *testing.T) {
 				t.Error("The corresponding Ts capacity is 0")
 			}
 			// 利用label
-			result, err = client.Do(context.Background(), "TS.MGET", "FILTER", "l="+f.Label).Slice()
+			result, err = client.Do(context.Background(), "TS.MGET", "FILTER", biz.WarningDetectFieldLabelName+"="+f.Label).Slice()
 			if err != nil {
 				t.Error(err)
 			} else if len(result) == 0 {
