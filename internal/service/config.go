@@ -3,9 +3,9 @@ package service
 import (
 	"context"
 	"fmt"
-	pb "gitee.com/moyusir/dataCollection/api/dataCollection/v1"
-	"gitee.com/moyusir/dataCollection/internal/biz"
-	"gitee.com/moyusir/dataCollection/internal/conf"
+	pb "gitee.com/moyusir/data-collection/api/dataCollection/v1"
+	"gitee.com/moyusir/data-collection/internal/biz"
+	"gitee.com/moyusir/data-collection/internal/conf"
 	util "gitee.com/moyusir/util/api/util/v1"
 	"github.com/go-kratos/kratos/v2/errors"
 	"github.com/go-kratos/kratos/v2/log"

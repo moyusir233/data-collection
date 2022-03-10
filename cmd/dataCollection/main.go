@@ -4,7 +4,7 @@ import (
 	"flag"
 	"os"
 
-	"gitee.com/moyusir/dataCollection/internal/conf"
+	"gitee.com/moyusir/data-collection/internal/conf"
 	"github.com/go-kratos/kratos/v2"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-kratos/kratos/v2/transport/grpc"

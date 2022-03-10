@@ -3,16 +3,18 @@ package test
 import (
 	"context"
 	"fmt"
-	"gitee.com/moyusir/dataCollection/internal/biz"
-	"gitee.com/moyusir/dataCollection/internal/conf"
-	"gitee.com/moyusir/dataCollection/internal/data"
+	"gitee.com/moyusir/data-collection/internal/biz"
+	"gitee.com/moyusir/data-collection/internal/conf"
+	"gitee.com/moyusir/data-collection/internal/data"
 	v1 "gitee.com/moyusir/util/api/util/v1"
 	"github.com/go-kratos/kratos/v2/log"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
 	"os"
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestBiz_WarningDetectUsecase_SaveDeviceState(t *testing.T) {
@@ -30,7 +32,7 @@ func TestBiz_WarningDetectUsecase_SaveDeviceState(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-
+	// 导入配置，初始化预警检测用例
 	bc, err := conf.LoadConfig("../../configs/config.yaml")
 	if err != nil {
 		t.Fatal(err)
@@ -41,6 +43,7 @@ func TestBiz_WarningDetectUsecase_SaveDeviceState(t *testing.T) {
 	}
 	t.Cleanup(cleanUp)
 
+	// 定义用于保存的测试信息
 	info := &biz.DeviceGeneralInfo{
 		DeviceClassID: 0,
 		DeviceID:      t.Name(),
@@ -50,6 +53,7 @@ func TestBiz_WarningDetectUsecase_SaveDeviceState(t *testing.T) {
 		Voltage:     5,
 		Current:     3,
 		Temperature: 22,
+		Time:        timestamppb.New(time.Now()),
 	}
 	fields := map[string]float64{
 		"Voltage":     state.Voltage,
@@ -61,6 +65,7 @@ func TestBiz_WarningDetectUsecase_SaveDeviceState(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	// 注册关闭连接和删除测试中创建的键的清理函数
 	t.Cleanup(cleanUp2)
 	t.Cleanup(func() {
@@ -71,6 +76,7 @@ func TestBiz_WarningDetectUsecase_SaveDeviceState(t *testing.T) {
 		}
 	})
 
+	// 保存设备状态
 	err = usecase.SaveDeviceState(info, &state, fields)
 	if err != nil {
 		t.Fatal(err)

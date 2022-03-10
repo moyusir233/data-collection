@@ -3,10 +3,9 @@ package data
 import (
 	"context"
 	"fmt"
-	"gitee.com/moyusir/dataCollection/internal/biz"
+	"gitee.com/moyusir/data-collection/internal/biz"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-redis/redis/v8"
-	"time"
 )
 
 // RedisRepo redis数据库操作对象，可以理解为dao
@@ -40,15 +39,14 @@ func (r *RedisRepo) SaveDeviceState(state *biz.DeviceState, fields ...*biz.Devic
 		// 将value转换为十六进制字符串进行保存
 		v := fmt.Sprintf("%x", state.Value)
 		p.ZAdd(context.Background(), state.Key, &redis.Z{
-			Score:  float64(time.Now().Unix()),
+			Score:  float64(state.Timestamp),
 			Member: v,
 		})
 		if len(fields) > 0 {
-			t := time.Now().Unix()
 			for _, f := range fields {
 				args := make([]interface{}, 0, len(fields)*3+1)
 				args = append(args, "TS.ADD")
-				args = append(args, f.Key, t, f.Value)
+				args = append(args, f.Key, state.Timestamp, f.Value)
 
 				// 当字段对应的ts未被创建时，以下设置的参数会被用于ts的创建
 

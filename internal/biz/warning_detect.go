@@ -20,8 +20,9 @@ type WarningDetectRepo interface {
 
 // DeviceState 代表一台设备完整的状态信息，利用protobuf编码，编码为二进制信息保存
 type DeviceState struct {
-	Key   string
-	Value []byte
+	Timestamp int64
+	Key       string
+	Value     []byte
 }
 
 // DeviceStateField 代表设备状态信息中需要进行预警预测的字段
@@ -39,7 +40,7 @@ func NewWarningDetectUsecase(repo UnionRepo, logger log.Logger) *WarningDetectUs
 }
 
 // SaveDeviceState 保存设备状态的完整信息以及预警字段信息,其中预警字段以<字段名>:<字段值>的形式传入函数
-func (u *WarningDetectUsecase) SaveDeviceState(info *DeviceGeneralInfo, state proto.Message, fields map[string]float64) error {
+func (u *WarningDetectUsecase) SaveDeviceState(info *DeviceGeneralInfo, state StateProtoMessage, fields map[string]float64) error {
 	var (
 		s = new(DeviceState)
 		f = make([]*DeviceStateField, 0, len(fields))
@@ -47,6 +48,7 @@ func (u *WarningDetectUsecase) SaveDeviceState(info *DeviceGeneralInfo, state pr
 	// 以<用户id>:device_state:<设备类别号>为键，在zset中保存
 	// 以timestamp为score，以设备状态二进制protobuf信息为value的键值对
 	s.Key = GetDeviceStateKey(info)
+	s.Timestamp = state.GetTime().AsTime().Unix()
 	marshal, err := proto.Marshal(state)
 	if err != nil {
 		return err

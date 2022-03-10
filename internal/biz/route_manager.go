@@ -3,7 +3,7 @@ package biz
 import (
 	"context"
 	"fmt"
-	"gitee.com/moyusir/dataCollection/internal/conf"
+	"gitee.com/moyusir/data-collection/internal/conf"
 	"gitee.com/moyusir/util/kong"
 	"golang.org/x/sync/errgroup"
 	"time"

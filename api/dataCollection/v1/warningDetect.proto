@@ -4,7 +4,7 @@ package api.dataCollection.v1;
 
 import "util/api/util/v1/general.proto";
 
-option go_package = "gitee.com/moyusir/dataCollection/api/dataCollection/v1;v1";
+option go_package = "gitee.com/moyusir/data-collection/api/dataCollection/v1;v1";
 option java_multiple_files = true;
 option java_package = "api.dataCollection.v1";
 

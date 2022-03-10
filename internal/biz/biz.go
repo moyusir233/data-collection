@@ -2,8 +2,10 @@ package biz
 
 import (
 	"fmt"
-	"gitee.com/moyusir/dataCollection/internal/conf"
+	"gitee.com/moyusir/data-collection/internal/conf"
 	"github.com/google/wire"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // ProviderSet is biz providers.
@@ -19,6 +21,12 @@ type DeviceGeneralInfo struct {
 type UnionRepo interface {
 	ConfigRepo
 	WarningDetectRepo
+}
+
+// StateProtoMessage 用于规范设备状态信息定义的接口
+type StateProtoMessage interface {
+	proto.Message
+	GetTime() *timestamppb.Timestamp
 }
 
 // GetDeviceConfigKey 以<用户id>:device_config:<device_class_id>:hash为键

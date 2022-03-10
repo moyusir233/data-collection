@@ -4,10 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	v1 "gitee.com/moyusir/dataCollection/api/dataCollection/v1"
-	"gitee.com/moyusir/dataCollection/internal/biz"
-	"gitee.com/moyusir/dataCollection/internal/conf"
-	"gitee.com/moyusir/dataCollection/internal/service"
+	v1 "gitee.com/moyusir/data-collection/api/dataCollection/v1"
+	"gitee.com/moyusir/data-collection/internal/biz"
+	"gitee.com/moyusir/data-collection/internal/conf"
+	"gitee.com/moyusir/data-collection/internal/service"
 	utilApi "gitee.com/moyusir/util/api/util/v1"
 	"gitee.com/moyusir/util/kong"
 	"github.com/go-kratos/kratos/v2/log"
@@ -18,6 +18,7 @@ import (
 	g "google.golang.org/grpc"
 	md "google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
 	"os"
 	"testing"
 	"time"
@@ -401,18 +402,21 @@ initClient:
 				Voltage:     1,
 				Current:     2,
 				Temperature: 3,
+				Time:        timestamppb.New(time.Now()),
 			},
 			{
 				Id:          "test5",
 				Voltage:     1,
 				Current:     2,
 				Temperature: 3,
+				Time:        timestamppb.New(time.Now()),
 			},
 			{
 				Id:          "test6",
 				Voltage:     1,
 				Current:     2,
 				Temperature: 3,
+				Time:        timestamppb.New(time.Now()),
 			},
 		}
 		configs := []*utilApi.TestedDeviceConfig{
@@ -562,7 +566,7 @@ initClient:
 		// 定义之前测试没有传输过的设备信息进行传输
 		states := make([]*utilApi.TestedDeviceState, len(deviceIDs))
 		for i, id := range deviceIDs {
-			states[i] = &utilApi.TestedDeviceState{Id: id}
+			states[i] = &utilApi.TestedDeviceState{Id: id, Time: timestamppb.New(time.Now())}
 		}
 
 		for _, s := range states {

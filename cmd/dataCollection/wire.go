@@ -6,11 +6,11 @@
 package main
 
 import (
-	"gitee.com/moyusir/dataCollection/internal/biz"
-	"gitee.com/moyusir/dataCollection/internal/conf"
-	"gitee.com/moyusir/dataCollection/internal/data"
-	"gitee.com/moyusir/dataCollection/internal/server"
-	"gitee.com/moyusir/dataCollection/internal/service"
+	"gitee.com/moyusir/data-collection/internal/biz"
+	"gitee.com/moyusir/data-collection/internal/conf"
+	"gitee.com/moyusir/data-collection/internal/data"
+	"gitee.com/moyusir/data-collection/internal/server"
+	"gitee.com/moyusir/data-collection/internal/service"
 	"github.com/go-kratos/kratos/v2"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/wire"

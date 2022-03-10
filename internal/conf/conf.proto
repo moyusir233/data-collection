@@ -4,7 +4,7 @@ package kratos.api;
 
 import "google/protobuf/duration.proto";
 
-option go_package = "gitee.com/moyusir/dataCollection/internal/conf;conf";
+option go_package = "gitee.com/moyusir/data-collection/internal/conf;conf";
 
 message Bootstrap {
     Server server = 1;

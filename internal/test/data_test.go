@@ -1,8 +1,8 @@
 package test
 
 import (
-	"gitee.com/moyusir/dataCollection/internal/conf"
-	"gitee.com/moyusir/dataCollection/internal/data"
+	"gitee.com/moyusir/data-collection/internal/conf"
+	"gitee.com/moyusir/data-collection/internal/data"
 	"github.com/go-kratos/kratos/v2/log"
 	"os"
 	"testing"

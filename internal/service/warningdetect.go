@@ -2,15 +2,15 @@ package service
 
 import (
 	"fmt"
-	"gitee.com/moyusir/dataCollection/internal/biz"
-	"gitee.com/moyusir/dataCollection/internal/conf"
+	"gitee.com/moyusir/data-collection/internal/biz"
+	"gitee.com/moyusir/data-collection/internal/conf"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 	"google.golang.org/grpc/metadata"
 	"io"
 	"time"
 
-	pb "gitee.com/moyusir/dataCollection/api/dataCollection/v1"
+	pb "gitee.com/moyusir/data-collection/api/dataCollection/v1"
 )
 
 type WarningDetectService struct {

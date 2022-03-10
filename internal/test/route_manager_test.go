@@ -2,8 +2,8 @@ package test
 
 import (
 	"fmt"
-	"gitee.com/moyusir/dataCollection/internal/biz"
-	"gitee.com/moyusir/dataCollection/internal/conf"
+	"gitee.com/moyusir/data-collection/internal/biz"
+	"gitee.com/moyusir/data-collection/internal/conf"
 	"gitee.com/moyusir/util/kong"
 	"github.com/imroc/req/v3"
 	"net/http"

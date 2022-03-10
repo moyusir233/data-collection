@@ -2,12 +2,13 @@ package test
 
 import (
 	"context"
-	"gitee.com/moyusir/dataCollection/internal/biz"
-	"gitee.com/moyusir/dataCollection/internal/conf"
-	"gitee.com/moyusir/dataCollection/internal/data"
+	"gitee.com/moyusir/data-collection/internal/biz"
+	"gitee.com/moyusir/data-collection/internal/conf"
+	"gitee.com/moyusir/data-collection/internal/data"
 	"github.com/go-kratos/kratos/v2/log"
 	"os"
 	"testing"
+	"time"
 )
 
 func TestData_RedisRepo(t *testing.T) {
@@ -63,8 +64,9 @@ func TestData_RedisRepo(t *testing.T) {
 	t.Run("Save_Device_State", func(t *testing.T) {
 		var (
 			state = &biz.DeviceState{
-				Key:   t.Name(),
-				Value: []byte(t.Name()),
+				Key:       t.Name(),
+				Value:     []byte(t.Name()),
+				Timestamp: time.Now().Unix(),
 			}
 			fields = []*biz.DeviceStateField{
 				{

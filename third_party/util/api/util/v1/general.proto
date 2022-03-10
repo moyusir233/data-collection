@@ -121,7 +121,8 @@ message TestedDeviceConfig{
 }
 message TestedDeviceState{
     string id=1;
-    double voltage=2;
-    double current=3;
-    double temperature=4;
+    google.protobuf.Timestamp time = 2;
+    double voltage=3;
+    double current=4;
+    double temperature=5;
 }

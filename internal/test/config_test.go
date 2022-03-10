@@ -3,9 +3,9 @@ package test
 import (
 	"context"
 	"fmt"
-	"gitee.com/moyusir/dataCollection/internal/biz"
-	"gitee.com/moyusir/dataCollection/internal/conf"
-	"gitee.com/moyusir/dataCollection/internal/data"
+	"gitee.com/moyusir/data-collection/internal/biz"
+	"gitee.com/moyusir/data-collection/internal/conf"
+	"gitee.com/moyusir/data-collection/internal/data"
 	v1 "gitee.com/moyusir/util/api/util/v1"
 	"github.com/go-kratos/kratos/v2/log"
 	"google.golang.org/protobuf/proto"

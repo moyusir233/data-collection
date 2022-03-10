@@ -3,7 +3,7 @@ package data
 import (
 	"context"
 	"fmt"
-	"gitee.com/moyusir/dataCollection/internal/conf"
+	"gitee.com/moyusir/data-collection/internal/conf"
 	"github.com/go-kratos/kratos/v2/log"
 	redis "github.com/go-redis/redis/v8"
 	"github.com/google/wire"
