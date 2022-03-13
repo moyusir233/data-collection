@@ -4,13 +4,11 @@ import (
 	"context"
 	"fmt"
 	"gitee.com/moyusir/data-collection/internal/biz"
-	"gitee.com/moyusir/data-collection/internal/conf"
 	"gitee.com/moyusir/data-collection/internal/data"
 	v1 "gitee.com/moyusir/util/api/util/v1"
 	"github.com/go-kratos/kratos/v2/log"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
-	"os"
 	"strconv"
 	"strings"
 	"testing"
@@ -18,25 +16,12 @@ import (
 )
 
 func TestBiz_WarningDetectUsecase_SaveDeviceState(t *testing.T) {
-	// 初始化测试所需环境变量
-	envs := map[string]string{
-		"USERNAME":           "test",
-		"DEVICE_CLASS_COUNT": "",
-		"SERVICE_NAME":       "",
-		"SERVICE_HOST":       "",
-		"APP_DOMAIN_NAME":    "",
-	}
-	for k, v := range envs {
-		err := os.Setenv(k, v)
-		if err != nil {
-			t.Fatal(err)
-		}
-	}
-	// 导入配置，初始化预警检测用例
-	bc, err := conf.LoadConfig("../../configs/config.yaml")
+	// 初始化测试环境
+	bc, err := generalInit("", map[string]string{})
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	usecase, cleanUp, err := InitWarningDetectUsecase(bc.Data, log.DefaultLogger)
 	if err != nil {
 		t.Fatal(err)

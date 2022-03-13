@@ -7,7 +7,6 @@ import (
 	"gitee.com/moyusir/util/kong"
 	"github.com/imroc/req/v3"
 	"net/http"
-	"os"
 	"testing"
 	"time"
 )
@@ -25,14 +24,7 @@ func TestBiz_RouteManager(t *testing.T) {
 		"SERVICE_HOST":       "nginx.test.svc.cluster.local",
 		"APP_DOMAIN_NAME":    "kong.test.svc.cluster.local",
 	}
-	for k, v := range envs {
-		err := os.Setenv(k, v)
-		if err != nil {
-			t.Fatal(err)
-		}
-	}
-
-	bootstrap, err := conf.LoadConfig("../../configs/config.yaml")
+	bootstrap, err := generalInit("", envs)
 	if err != nil {
 		t.Fatal(err)
 	}

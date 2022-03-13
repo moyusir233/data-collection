@@ -6,20 +6,12 @@ import (
 	"fmt"
 	v1 "gitee.com/moyusir/data-collection/api/dataCollection/v1"
 	"gitee.com/moyusir/data-collection/internal/biz"
-	"gitee.com/moyusir/data-collection/internal/conf"
 	"gitee.com/moyusir/data-collection/internal/service"
 	utilApi "gitee.com/moyusir/util/api/util/v1"
-	"gitee.com/moyusir/util/kong"
-	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-kratos/kratos/v2/metadata"
-	middlewareMD "github.com/go-kratos/kratos/v2/middleware/metadata"
-	"github.com/go-kratos/kratos/v2/transport/grpc"
-	"github.com/go-kratos/kratos/v2/transport/http"
-	g "google.golang.org/grpc"
 	md "google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
-	"os"
 	"testing"
 	"time"
 )
@@ -46,123 +38,19 @@ func TestDataCollectionService(t *testing.T) {
 		"SERVICE_HOST":       "auto-test-server.test.svc.cluster.local",
 		"APP_DOMAIN_NAME":    "kong.test.svc.cluster.local",
 	}
-	for k, v := range envs {
-		err := os.Setenv(k, v)
-		if err != nil {
-			t.Fatal(err)
-		}
-	}
-
-	// 导入配置，并启动服务器
-	bootstrap, err := conf.LoadConfig("../../configs/config.yaml")
+	bootstrap, err := generalInit("", envs)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	logger := log.NewStdLogger(os.Stdout)
-	app, cleanUp, err := initApp(bootstrap.Server, bootstrap.Data, logger)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// done用来等待服务器关闭完毕
-	done := make(chan struct{})
-	t.Cleanup(func() {
-		app.Stop()
-		cleanUp()
-		<-done
-	})
-	go func() {
-		defer close(done)
-		err = app.Run()
-		if err != nil {
-			t.Error(err)
-		}
-	}()
-
-	// 等待服务器开启，然后创建测试用的grpc、http与网关客户端以及使用的api密钥
-	var (
-		grpcConn            *g.ClientConn
-		httpConn            *http.Client
-		configClient        v1.ConfigClient
-		warningDetectClient v1.WarningDetectClient
-		configHttpClient    v1.ConfigHTTPClient
-		admin               *kong.Admin
-		apiKey              *kong.Key
-	)
-
-	// 创建网关客户端，并创建api密钥
-	admin = kong.NewAdmin(bootstrap.Server.Gateway.Address)
-	consumer, err := admin.Create(&kong.ConsumerCreateOption{Username: "test"})
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() {
-		admin.Delete(consumer)
-	})
-
-	key, err := admin.Create(&kong.KeyCreateOption{Username: "test"})
-	if err != nil {
-		return
-	}
-	apiKey = key.(*kong.Key)
-	t.Cleanup(func() {
-		admin.Delete(key)
-	})
-
-	// 创建http与grpc的连接与客户端
-initClient:
-	for {
-		select {
-		case <-done:
-			t.Fatal("server start fail")
-		default:
-			// 创建grpc客户端
-			// 因为grpc服务的网关组件由服务中心创建，所以这里没有通过网关建立grpc连接，而是本地直接连接
-			grpcConn, err = grpc.DialInsecure(
-				context.Background(),
-				grpc.WithEndpoint("localhost:9000"),
-			)
-			if err != nil {
-				grpcConn.Close()
-				continue
-			} else {
-				configClient = v1.NewConfigClient(grpcConn)
-				warningDetectClient = v1.NewWarningDetectClient(grpcConn)
-			}
-
-			// 创建http客户端时，为了通过网关进行转发，需要配置请求头的插件，存放密钥和路由的请求头
-			httpConn, err = http.NewClient(
-				context.Background(),
-				http.WithEndpoint(KONG_HTTP_ADDRESS),
-				http.WithMiddleware(
-					middlewareMD.Client(
-						middlewareMD.WithPropagatedPrefix("X-Device-ID"),
-						middlewareMD.WithConstants(map[string]string{"X-Api-Key": apiKey.Key}),
-					),
-				),
-			)
-
-			if err != nil {
-				httpConn.Close()
-				continue
-			} else {
-				configHttpClient = v1.NewConfigHTTPClient(httpConn)
-			}
-			break initClient
-		}
-	}
-	t.Cleanup(func() {
-		grpcConn.Close()
-		httpConn.Close()
-	})
+	configClient, configHttpClient, warningDetectClient := StartDataCollectionTestServer(t, bootstrap)
 
 	// 声明两个clientID用于测试
 	var (
 		clientID1, clientID2 string
 	)
 
-	// 辅助函数
+	// 辅助函数的声明
 	var (
 		createConfigUpdateStream func(t *testing.T, cid string) (stream v1.Config_CreateConfigUpdateStreamClient, clientID string, err error)
 		createStateInfoStream    func(t *testing.T, cid string) (stream v1.WarningDetect_CreateStateInfoSaveStreamClient, clientID string, err error)
@@ -170,154 +58,156 @@ initClient:
 		sendUpdateConfigRequest  func(configs ...*utilApi.TestedDeviceConfig) error
 		checkRecvConfig          func(stream v1.Config_CreateConfigUpdateStreamClient, configs ...*utilApi.TestedDeviceConfig) error
 	)
+	// 辅助函数的实现
+	{
+		// 创建配置更新流的辅助函数
+		createConfigUpdateStream = func(t *testing.T, cid string) (stream v1.Config_CreateConfigUpdateStreamClient, clientID string, err error) {
+			ctx := context.Background()
 
-	// 创建配置更新流的辅助函数
-	createConfigUpdateStream = func(t *testing.T, cid string) (stream v1.Config_CreateConfigUpdateStreamClient, clientID string, err error) {
-		ctx := context.Background()
+			// 若传入的cid不为空，表示需要进行clientID的复用，因此进行请求头的配置
+			if cid != "" {
+				ctx = md.NewOutgoingContext(
+					context.Background(),
+					map[string][]string{service.CLIENT_ID_HEADER: {cid}})
+				clientID = cid
+			}
 
-		// 若传入的cid不为空，表示需要进行clientID的复用，因此进行请求头的配置
-		if cid != "" {
-			ctx = md.NewOutgoingContext(
-				context.Background(),
-				map[string][]string{service.CLIENT_ID_HEADER: {cid}})
-			clientID = cid
+			// 建立更新流
+			stream, err = configClient.CreateConfigUpdateStream(ctx)
+			if err != nil {
+				return nil, "", err
+			}
+
+			// 当传入的cid为空时，需要从响应头中获得服务器创建的clientID
+			if cid == "" {
+				// 从更新流响应头中获得clientID
+				header, err := stream.Header()
+				if err != nil {
+					return nil, "", err
+				}
+				if tmp := header.Get(service.CLIENT_ID_HEADER); len(tmp) != 0 {
+					clientID = tmp[0]
+				} else {
+					return nil, "", errors.New("can not find the header of clientID")
+				}
+			}
+			return
 		}
 
-		// 建立更新流
-		stream, err = configClient.CreateConfigUpdateStream(ctx)
-		if err != nil {
-			return nil, "", err
-		}
+		// 创建设备状态流的辅助函数
+		createStateInfoStream = func(t *testing.T, cid string) (stream v1.WarningDetect_CreateStateInfoSaveStreamClient, clientID string, err error) {
+			// 配置请求头
+			ctx := context.Background()
+			if cid != "" {
+				ctx = md.NewOutgoingContext(
+					context.Background(),
+					map[string][]string{service.CLIENT_ID_HEADER: {cid}})
+			}
 
-		// 当传入的cid为空时，需要从响应头中获得服务器创建的clientID
-		if cid == "" {
-			// 从更新流响应头中获得clientID
+			// 创建流
+			stream, err = warningDetectClient.CreateStateInfoSaveStream(ctx)
+			if err != nil {
+				return nil, "", err
+			}
+			t.Cleanup(func() {
+				// 关闭客户端发送流，并接收reply，判断初始设备配置信息是否传输成功
+				stream.CloseSend()
+			})
+
+			// 从stream的响应头中提取本次建立数据流使用clientID
 			header, err := stream.Header()
 			if err != nil {
 				return nil, "", err
 			}
-			if tmp := header.Get(service.CLIENT_ID_HEADER); len(tmp) != 0 {
-				clientID = tmp[0]
-			} else {
+			if tmp := header.Get(service.CLIENT_ID_HEADER); len(tmp) == 0 {
 				return nil, "", errors.New("can not find the header of clientID")
+			} else {
+				clientID = tmp[0]
 			}
-		}
-		return
-	}
-
-	// 创建设备状态流的辅助函数
-	createStateInfoStream = func(t *testing.T, cid string) (stream v1.WarningDetect_CreateStateInfoSaveStreamClient, clientID string, err error) {
-		// 配置请求头
-		ctx := context.Background()
-		if cid != "" {
-			ctx = md.NewOutgoingContext(
-				context.Background(),
-				map[string][]string{service.CLIENT_ID_HEADER: {cid}})
+			return
 		}
 
-		// 创建流
-		stream, err = warningDetectClient.CreateStateInfoSaveStream(ctx)
-		if err != nil {
-			return nil, "", err
-		}
-		t.Cleanup(func() {
-			// 关闭客户端发送流，并接收reply，判断初始设备配置信息是否传输成功
-			stream.CloseSend()
-		})
+		// 创建初始配置流的辅助函数
+		createInitConfigStream = func(t *testing.T, cid string) (stream v1.Config_CreateInitialConfigSaveStreamClient, err error) {
+			// 配置请求头
+			ctx := context.Background()
+			if cid != "" {
+				ctx = md.NewOutgoingContext(
+					context.Background(),
+					map[string][]string{service.CLIENT_ID_HEADER: {cid}})
+			}
 
-		// 从stream的响应头中提取本次建立数据流使用clientID
-		header, err := stream.Header()
-		if err != nil {
-			return nil, "", err
-		}
-		if tmp := header.Get(service.CLIENT_ID_HEADER); len(tmp) == 0 {
-			return nil, "", errors.New("can not find the header of clientID")
-		} else {
-			clientID = tmp[0]
-		}
-		return
-	}
-
-	// 创建初始配置流的辅助函数
-	createInitConfigStream = func(t *testing.T, cid string) (stream v1.Config_CreateInitialConfigSaveStreamClient, err error) {
-		// 配置请求头
-		ctx := context.Background()
-		if cid != "" {
-			ctx = md.NewOutgoingContext(
-				context.Background(),
-				map[string][]string{service.CLIENT_ID_HEADER: {cid}})
-		}
-
-		stream, err = configClient.CreateInitialConfigSaveStream(ctx)
-		if err != nil {
-			return nil, err
-		}
-		t.Cleanup(func() {
-			reply, err := stream.CloseAndRecv()
+			stream, err = configClient.CreateInitialConfigSaveStream(ctx)
 			if err != nil {
-				t.Error(err)
-				return
+				return nil, err
 			}
-			if !reply.Success {
-				err = errors.New("failed to send the initial config of device")
-			}
-		})
-		return
-	}
-
-	// 发送配置更新http请求的辅助函数
-	sendUpdateConfigRequest = func(configs ...*utilApi.TestedDeviceConfig) error {
-		for _, c := range configs {
-			id := biz.GetKey(&biz.DeviceGeneralInfo{
-				DeviceClassID: 0,
-				DeviceID:      c.Id,
+			t.Cleanup(func() {
+				reply, err := stream.CloseAndRecv()
+				if err != nil {
+					t.Error(err)
+					return
+				}
+				if !reply.Success {
+					err = errors.New("failed to send the initial config of device")
+				}
 			})
-			// 配置http请求头
-			clientContext := metadata.NewClientContext(
-				context.Background(),
-				map[string]string{"X-Device-ID": id},
-			)
-
-			reply, err := configHttpClient.UpdateDeviceConfig(clientContext, c)
-			if err != nil {
-				return err
-			}
-			if !reply.Success {
-				return errors.New("failed to send the request which updates the device config")
-			}
+			return
 		}
-		return nil
-	}
 
-	// 检查配置更新流推送的更新消息是否正确的辅助函数
-	checkRecvConfig = func(stream v1.Config_CreateConfigUpdateStreamClient, configs ...*utilApi.TestedDeviceConfig) error {
-		// 检查更新流中接收到的配置更新消息与http发送的是否一致
-		for i, c := range configs {
-			config, err := stream.Recv()
-			if err != nil {
-				return err
-			}
-
-			// 发送答复，告知服务端接收成功
-			// 当发送最后一条信息时，告诉服务端可以结束连接
-			reply := &v1.ConfigUpdateReply{Success: true, End: false}
-			if i == len(configs)-1 {
-				reply.End = true
-			}
-			err = stream.Send(reply)
-			if err != nil {
-				return err
-			}
-
-			if !proto.Equal(c, config) {
-				msg := fmt.Sprintf(
-					"the config update information sent by the HTTP request was not pushed correctly: %v %v",
-					*c, *config,
+		// 发送配置更新http请求的辅助函数
+		sendUpdateConfigRequest = func(configs ...*utilApi.TestedDeviceConfig) error {
+			for _, c := range configs {
+				id := biz.GetKey(&biz.DeviceGeneralInfo{
+					DeviceClassID: 0,
+					DeviceID:      c.Id,
+				})
+				// 配置http请求头
+				clientContext := metadata.NewClientContext(
+					context.Background(),
+					map[string]string{"X-Device-ID": id},
 				)
-				return errors.New(msg)
+
+				reply, err := configHttpClient.UpdateDeviceConfig(clientContext, c)
+				if err != nil {
+					return err
+				}
+				if !reply.Success {
+					return errors.New("failed to send the request which updates the device config")
+				}
 			}
+			return nil
 		}
-		return nil
+
+		// 检查配置更新流推送的更新消息是否正确的辅助函数
+		checkRecvConfig = func(stream v1.Config_CreateConfigUpdateStreamClient, configs ...*utilApi.TestedDeviceConfig) error {
+			// 检查更新流中接收到的配置更新消息与http发送的是否一致
+			for i, c := range configs {
+				config, err := stream.Recv()
+				if err != nil {
+					return err
+				}
+
+				// 发送答复，告知服务端接收成功
+				// 当发送最后一条信息时，告诉服务端可以结束连接
+				reply := &v1.ConfigUpdateReply{Success: true, End: false}
+				if i == len(configs)-1 {
+					reply.End = true
+				}
+				err = stream.Send(reply)
+				if err != nil {
+					return err
+				}
+
+				if !proto.Equal(c, config) {
+					msg := fmt.Sprintf(
+						"the config update information sent by the HTTP request was not pushed correctly: %v %v",
+						*c, *config,
+					)
+					return errors.New(msg)
+				}
+			}
+			return nil
+		}
 	}
 
 	// 1. 测试通过上传设备初始配置，建立的设备配置更新路由是否可靠(clientID存在,注册新设备的分支)
