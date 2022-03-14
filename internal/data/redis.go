@@ -35,32 +35,37 @@ func (r *RedisRepo) SaveDeviceConfig(key, field string, value []byte) error {
 // SaveDeviceState 以timestamp为score,保存设备状态信息到zset中,并保存设备状态预警字段至timeseries中
 func (r *RedisRepo) SaveDeviceState(state *biz.DeviceState, fields ...*biz.DeviceStateField) error {
 	// 利用redis事务确保设备状态信息和其预警字段信息共同保存
-	_, err := r.client.TxPipelined(context.Background(), func(p redis.Pipeliner) error {
+	results, err := r.client.TxPipelined(context.Background(), func(p redis.Pipeliner) error {
 		// 将value转换为十六进制字符串进行保存
 		v := fmt.Sprintf("%x", state.Value)
 		p.ZAdd(context.Background(), state.Key, &redis.Z{
 			Score:  float64(state.Timestamp),
 			Member: v,
 		})
-		if len(fields) > 0 {
-			for _, f := range fields {
-				args := make([]interface{}, 0, len(fields)*3+1)
-				args = append(args, "TS.ADD")
-				args = append(args, f.Key, state.Timestamp, f.Value)
+		for _, f := range fields {
+			var args []interface{}
+			args = append(args, "TS.ADD")
+			args = append(args, f.Key, state.Timestamp, f.Value)
 
-				// 当字段对应的ts未被创建时，以下设置的参数会被用于ts的创建
+			// 当字段对应的ts未被创建时，以下设置的参数会被用于ts的创建
 
-				// 设置ts中数据的时间戳最大跨度,redis会根据这个值自动对ts执行trim操作
-				args = append(args, "RETENTION", r.client.retention.Milliseconds())
-				// 设置ts的标签
-				args = append(args, "LABELS", biz.WarningDetectFieldLabelName, f.Label)
-				p.Do(context.Background(), args...)
-			}
+			// 设置ts中数据的时间戳最大跨度,redis会根据这个值自动对ts执行trim操作
+			args = append(args, "RETENTION", r.client.retention.Milliseconds())
+			// 设置ts的标签
+			args = append(args, "LABELS", biz.WarningDetectFieldLabelName, f.Label)
+			p.Do(context.Background(), args...)
 		}
 		return nil
 	})
 	if err != nil {
 		return err
 	}
+	// 查看pipeline中每条命令的执行结果
+	for _, result := range results {
+		if result.Err() != nil {
+			return result.Err()
+		}
+	}
+
 	return nil
 }

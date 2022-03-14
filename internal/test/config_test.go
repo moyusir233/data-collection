@@ -12,7 +12,7 @@ import (
 )
 
 func TestBiz_ConfigUsecase_SaveDeviceConfig(t *testing.T) {
-	bc, err := generalInit()
+	bc, err := generalInit("", map[string]string{})
 	if err != nil {
 		t.Fatal(err)
 	}

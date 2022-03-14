@@ -48,7 +48,7 @@ func (u *WarningDetectUsecase) SaveDeviceState(info *DeviceGeneralInfo, state St
 	// 以<用户id>:device_state:<设备类别号>为键，在zset中保存
 	// 以timestamp为score，以设备状态二进制protobuf信息为value的键值对
 	s.Key = GetDeviceStateKey(info)
-	s.Timestamp = state.GetTime().AsTime().Unix()
+	s.Timestamp = state.GetTime().AsTime().UnixMilli()
 	marshal, err := proto.Marshal(state)
 	if err != nil {
 		return err

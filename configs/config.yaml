@@ -17,3 +17,4 @@ data:
     masterName: mymaster
     poolSize: 5
     minIdleConns: 2
+    tsRetention: 3600s
