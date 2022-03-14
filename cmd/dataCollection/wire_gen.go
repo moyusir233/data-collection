@@ -26,7 +26,11 @@ func initApp(confServer *conf.Server, confData *conf.Data, logger log.Logger) (*
 	}
 	unionRepo := data.NewRedisRepo(dataData, logger)
 	configUsecase := biz.NewConfigUsecase(unionRepo, logger)
-	routeManager := biz.NewRouteManager(confServer)
+	routeManager, err := biz.NewRouteManager(confServer)
+	if err != nil {
+		cleanup()
+		return nil, nil, err
+	}
 	configService, cleanup2, err := service.NewConfigService(configUsecase, routeManager, logger)
 	if err != nil {
 		cleanup()

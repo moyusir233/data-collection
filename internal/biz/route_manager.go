@@ -31,7 +31,7 @@ type RouteManager struct {
 	done context.CancelFunc
 }
 
-func NewRouteManager(c *conf.Server) *RouteManager {
+func NewRouteManager(c *conf.Server) (*RouteManager, error) {
 	// 初始化kong组件创建的默认配置
 	// 设备配置更新的相关路由组件都打上了conf.ServiceName的tag(即pod的名字)
 	// 方便容器关闭时组件的注销
@@ -80,14 +80,19 @@ func NewRouteManager(c *conf.Server) *RouteManager {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
+	admin, err := kong.NewAdmin(c.Gateway.Address)
+	if err != nil {
+		return nil, err
+	}
+
 	return &RouteManager{
-		gateway: kong.NewAdmin(c.Gateway.Address),
+		gateway: admin,
 		timeout: c.Gateway.RouteTimeout.AsDuration(),
 		table:   new(RouteTable),
 		eg:      new(errgroup.Group),
 		ctx:     ctx,
 		done:    cancel,
-	}
+	}, nil
 }
 
 // Init 创建服务的网关组件service以及plugin,route动态创建
