@@ -10,12 +10,12 @@ paths:
     /configs:
         post:
             summary: 更新指定设备的配置
-            operationId: Config_UpdateDeviceConfig
+            operationId: Config_UpdateDeviceConfig0
             requestBody:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/TestedDeviceConfig'
+                            $ref: '#/components/schemas/DeviceConfig0'
                 required: true
             responses:
                 "200":
@@ -23,17 +23,16 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/ConfigServiceReply'
+                                $ref: '#/components/schemas/ConfigServiceReply0'
 components:
     schemas:
-        ConfigServiceReply:
+        ConfigServiceReply0:
             properties:
                 success:
                     type: boolean
-        TestedDeviceConfig:
+        DeviceConfig0:
             properties:
                 id:
                     type: string
                 status:
                     type: boolean
-            description: 测试中使用的设备状态信息和设备配置信息

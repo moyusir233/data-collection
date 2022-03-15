@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package api.dataCollection.v1;
 
-import "util/api/util/v1/general.proto";
+import "google/protobuf/timestamp.proto";
 
 option go_package = "gitee.com/moyusir/data-collection/api/dataCollection/v1;v1";
 option java_multiple_files = true;
@@ -12,9 +12,17 @@ option java_package = "api.dataCollection.v1";
 // 预警检测服务，主要包括数据收集部分
 service WarningDetect {
     // 设备状态信息收集服务
-    rpc CreateStateInfoSaveStream(stream api.util.v1.TestedDeviceState) returns (stream WarningDetectServiceReply);
+    rpc CreateStateInfoSaveStream0(stream DeviceState0) returns (stream WarningDetectServiceReply0);
 }
 
-message WarningDetectServiceReply {
+message WarningDetectServiceReply0 {
     bool success = 1;
+}
+
+message DeviceState0{
+    string id=1;
+    google.protobuf.Timestamp time = 2;
+    double voltage=3;
+    double current=4;
+    double temperature=5;
 }

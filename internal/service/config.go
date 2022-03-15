@@ -6,7 +6,6 @@ import (
 	pb "gitee.com/moyusir/data-collection/api/dataCollection/v1"
 	"gitee.com/moyusir/data-collection/internal/biz"
 	"gitee.com/moyusir/data-collection/internal/conf"
-	util "gitee.com/moyusir/util/api/util/v1"
 	"github.com/go-kratos/kratos/v2/errors"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
@@ -46,7 +45,7 @@ func NewConfigService(uc *biz.ConfigUsecase, r *biz.RouteManager, logger log.Log
 // 在保存设备初始配置时，当客户端请求头中包含clientID时，
 // 程序会为该clientID与传送过来的配置信息对应的设备建立路由资源，
 // 然后客户端可以使用该clientID建立的配置更新流，接收相应的配置更新信息
-func (s *ConfigService) CreateInitialConfigSaveStream(conn pb.Config_CreateInitialConfigSaveStreamServer) error {
+func (s *ConfigService) CreateInitialConfigSaveStream0(conn pb.Config_CreateInitialConfigSaveStream0Server) error {
 	// 设备类别号，代码生成时注入
 	var (
 		clientID      string
@@ -62,7 +61,7 @@ func (s *ConfigService) CreateInitialConfigSaveStream(conn pb.Config_CreateIniti
 	for {
 		config, err := conn.Recv()
 		if err == io.EOF {
-			return conn.SendAndClose(&pb.ConfigServiceReply{Success: true})
+			return conn.SendAndClose(&pb.ConfigServiceReply0{Success: true})
 		} else if err != nil {
 			return err
 		}
@@ -91,7 +90,7 @@ func (s *ConfigService) CreateInitialConfigSaveStream(conn pb.Config_CreateIniti
 // 在客户端建立设备配置更新流时，服务器都会分配给客户端一个唯一的clientID，
 // 之后，所有利用该ID进行初始配置保存以及状态信息传输的设备的配置更新信息，都会推送到该ID对应的配置更新流中
 // 即哪台设备的配置更新信息推送到该配置更新流，是由利用该ID传输的初始配置信息以及设备状态信息决定的
-func (s *ConfigService) CreateConfigUpdateStream(conn pb.Config_CreateConfigUpdateStreamServer) error {
+func (s *ConfigService) CreateConfigUpdateStream0(conn pb.Config_CreateConfigUpdateStream0Server) error {
 	var (
 		clientID      string
 		updateChannel chan interface{}
@@ -131,7 +130,7 @@ func (s *ConfigService) CreateConfigUpdateStream(conn pb.Config_CreateConfigUpda
 	*/
 
 	for c := range updateChannel {
-		config := c.(*util.TestedDeviceConfig)
+		config := c.(*pb.DeviceConfig0)
 		err := conn.Send(config)
 		if err != nil {
 			// TODO 考虑发送失败时，是否需要将配置更新消息存储回channel
@@ -167,14 +166,14 @@ func (s *ConfigService) CreateConfigUpdateStream(conn pb.Config_CreateConfigUpda
 }
 
 // UpdateDeviceConfig 接收到设备配置更新的http请求时，依据设备信息得到相应的channel，并进行更新消息的推送
-func (s *ConfigService) UpdateDeviceConfig(ctx context.Context, req *util.TestedDeviceConfig) (*pb.ConfigServiceReply, error) {
+func (s *ConfigService) UpdateDeviceConfig0(ctx context.Context, req *pb.DeviceConfig0) (*pb.ConfigServiceReply0, error) {
 	// 设备类别号，代码生成时注入
 	deviceClassID := 0
 	info := &biz.DeviceGeneralInfo{DeviceClassID: deviceClassID, DeviceID: req.Id}
 	// 查询节点，将配置更新信息发送到相应channel中
 	if channel, ok := s.manager.GetDeviceUpdateChannel(info); ok {
 		channel <- req
-		return &pb.ConfigServiceReply{Success: true}, nil
+		return &pb.ConfigServiceReply0{Success: true}, nil
 	} else {
 		return nil, errors.New(400,
 			"unable to find the config update stream",

@@ -6,7 +6,6 @@ package v1
 
 import (
 	context "context"
-	v1 "gitee.com/moyusir/util/api/util/v1"
 	http "github.com/go-kratos/kratos/v2/transport/http"
 	binding "github.com/go-kratos/kratos/v2/transport/http/binding"
 )
@@ -19,35 +18,35 @@ var _ = binding.EncodeURL
 const _ = http.SupportPackageIsVersion1
 
 type ConfigHTTPServer interface {
-	UpdateDeviceConfig(context.Context, *v1.TestedDeviceConfig) (*ConfigServiceReply, error)
+	UpdateDeviceConfig0(context.Context, *DeviceConfig0) (*ConfigServiceReply0, error)
 }
 
 func RegisterConfigHTTPServer(s *http.Server, srv ConfigHTTPServer) {
 	r := s.Route("/")
-	r.POST("/configs", _Config_UpdateDeviceConfig0_HTTP_Handler(srv))
+	r.POST("/configs", _Config_UpdateDeviceConfig00_HTTP_Handler(srv))
 }
 
-func _Config_UpdateDeviceConfig0_HTTP_Handler(srv ConfigHTTPServer) func(ctx http.Context) error {
+func _Config_UpdateDeviceConfig00_HTTP_Handler(srv ConfigHTTPServer) func(ctx http.Context) error {
 	return func(ctx http.Context) error {
-		var in v1.TestedDeviceConfig
+		var in DeviceConfig0
 		if err := ctx.Bind(&in); err != nil {
 			return err
 		}
-		http.SetOperation(ctx, "/api.dataCollection.v1.Config/UpdateDeviceConfig")
+		http.SetOperation(ctx, "/api.dataCollection.v1.Config/UpdateDeviceConfig0")
 		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.UpdateDeviceConfig(ctx, req.(*v1.TestedDeviceConfig))
+			return srv.UpdateDeviceConfig0(ctx, req.(*DeviceConfig0))
 		})
 		out, err := h(ctx, &in)
 		if err != nil {
 			return err
 		}
-		reply := out.(*ConfigServiceReply)
+		reply := out.(*ConfigServiceReply0)
 		return ctx.Result(200, reply)
 	}
 }
 
 type ConfigHTTPClient interface {
-	UpdateDeviceConfig(ctx context.Context, req *v1.TestedDeviceConfig, opts ...http.CallOption) (rsp *ConfigServiceReply, err error)
+	UpdateDeviceConfig0(ctx context.Context, req *DeviceConfig0, opts ...http.CallOption) (rsp *ConfigServiceReply0, err error)
 }
 
 type ConfigHTTPClientImpl struct {
@@ -58,11 +57,11 @@ func NewConfigHTTPClient(client *http.Client) ConfigHTTPClient {
 	return &ConfigHTTPClientImpl{client}
 }
 
-func (c *ConfigHTTPClientImpl) UpdateDeviceConfig(ctx context.Context, in *v1.TestedDeviceConfig, opts ...http.CallOption) (*ConfigServiceReply, error) {
-	var out ConfigServiceReply
+func (c *ConfigHTTPClientImpl) UpdateDeviceConfig0(ctx context.Context, in *DeviceConfig0, opts ...http.CallOption) (*ConfigServiceReply0, error) {
+	var out ConfigServiceReply0
 	pattern := "/configs"
 	path := binding.EncodeURL(pattern, in, false)
-	opts = append(opts, http.Operation("/api.dataCollection.v1.Config/UpdateDeviceConfig"))
+	opts = append(opts, http.Operation("/api.dataCollection.v1.Config/UpdateDeviceConfig0"))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
 	if err != nil {
