@@ -5,15 +5,12 @@ import (
 	"github.com/go-kratos/kratos/v2/config/file"
 	"log"
 	"os"
-	"strconv"
 )
 
 // 定义了当前程序服务的用户及其设备的基本信息，由服务中心生成代码时注入
 var (
 	// Username 该服务对应用户的id
 	Username = "test"
-	// DeviceClassCount 用户注册的设备数量
-	DeviceClassCount = 5
 	// ServiceName 注册kong service时使用的服务名,默认为pod的名称,通过环境变量注入
 	ServiceName = "test"
 	// ServiceHost 注册kong service时使用的host,为pod在k8s中注册的域名,通过环境变量注入
@@ -27,11 +24,6 @@ func initEnv() {
 		Username = username
 	} else {
 		log.Fatalln("The required environment variable USERNAME is missing")
-	}
-	if count, ok := os.LookupEnv("DEVICE_CLASS_COUNT"); ok {
-		DeviceClassCount, _ = strconv.Atoi(count)
-	} else {
-		log.Fatalln("The required environment variable DEVICE_CLASS_COUNT is missing")
 	}
 	if serviceName, ok := os.LookupEnv("SERVICE_NAME"); ok {
 		ServiceName = serviceName

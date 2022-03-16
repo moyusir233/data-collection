@@ -26,9 +26,6 @@ func TestDataCollectionService(t *testing.T) {
 	//    (与上述情况类似，不过此时会为不存在的clientID复用之前的父节点，对应着clientID不存在，设备信息已注册的分支)
 	// 6. 测试路由自动注销功能
 
-	const (
-		KONG_HTTP_ADDRESS = "kong.test.svc.cluster.local:8000"
-	)
 	// 初始化测试所需环境变量
 	envs := map[string]string{
 		"USERNAME":           "test",
@@ -157,7 +154,7 @@ func TestDataCollectionService(t *testing.T) {
 		sendUpdateConfigRequest = func(configs ...*v1.DeviceConfig1) error {
 			for _, c := range configs {
 				id := biz.GetKey(&biz.DeviceGeneralInfo{
-					DeviceClassID: 0,
+					DeviceClassID: 1,
 					DeviceID:      c.Id,
 				})
 				// 配置http请求头

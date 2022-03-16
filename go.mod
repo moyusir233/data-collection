@@ -11,7 +11,7 @@ require (
 )
 
 require (
-	gitee.com/moyusir/util v0.1.2
+	gitee.com/moyusir/util v0.1.3
 	github.com/google/uuid v1.3.0
 	github.com/imroc/req/v3 v3.7.6
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
