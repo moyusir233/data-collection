@@ -112,7 +112,11 @@ func StartDataCollectionTestServer(t *testing.T, bootstrap *conf.Bootstrap) (
 	)
 
 	// 创建网关客户端，并创建api密钥
-	admin = kong.NewAdmin(bootstrap.Server.Gateway.Address)
+	admin, err = kong.NewAdmin(bootstrap.Server.Gateway.Address)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	consumer, err := admin.Create(&kong.ConsumerCreateOption{Username: "test"})
 	if err != nil {
 		t.Fatal(err)

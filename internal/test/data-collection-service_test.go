@@ -7,7 +7,6 @@ import (
 	v1 "gitee.com/moyusir/data-collection/api/dataCollection/v1"
 	"gitee.com/moyusir/data-collection/internal/biz"
 	"gitee.com/moyusir/data-collection/internal/service"
-	utilApi "gitee.com/moyusir/util/api/util/v1"
 	"github.com/go-kratos/kratos/v2/metadata"
 	md "google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/proto"
@@ -52,16 +51,16 @@ func TestDataCollectionService(t *testing.T) {
 
 	// 辅助函数的声明
 	var (
-		createConfigUpdateStream func(t *testing.T, cid string) (stream v1.Config_CreateConfigUpdateStreamClient, clientID string, err error)
-		createStateInfoStream    func(t *testing.T, cid string) (stream v1.WarningDetect_CreateStateInfoSaveStreamClient, clientID string, err error)
-		createInitConfigStream   func(t *testing.T, cid string) (stream v1.Config_CreateInitialConfigSaveStreamClient, err error)
-		sendUpdateConfigRequest  func(configs ...*utilApi.TestedDeviceConfig) error
-		checkRecvConfig          func(stream v1.Config_CreateConfigUpdateStreamClient, configs ...*utilApi.TestedDeviceConfig) error
+		createConfigUpdateStream func(t *testing.T, cid string) (stream v1.Config_CreateConfigUpdateStream1Client, clientID string, err error)
+		createStateInfoStream    func(t *testing.T, cid string) (stream v1.WarningDetect_CreateStateInfoSaveStream1Client, clientID string, err error)
+		createInitConfigStream   func(t *testing.T, cid string) (stream v1.Config_CreateInitialConfigSaveStream1Client, err error)
+		sendUpdateConfigRequest  func(configs ...*v1.DeviceConfig1) error
+		checkRecvConfig          func(stream v1.Config_CreateConfigUpdateStream1Client, configs ...*v1.DeviceConfig1) error
 	)
 	// 辅助函数的实现
 	{
 		// 创建配置更新流的辅助函数
-		createConfigUpdateStream = func(t *testing.T, cid string) (stream v1.Config_CreateConfigUpdateStreamClient, clientID string, err error) {
+		createConfigUpdateStream = func(t *testing.T, cid string) (stream v1.Config_CreateConfigUpdateStream1Client, clientID string, err error) {
 			ctx := context.Background()
 
 			// 若传入的cid不为空，表示需要进行clientID的复用，因此进行请求头的配置
@@ -73,7 +72,7 @@ func TestDataCollectionService(t *testing.T) {
 			}
 
 			// 建立更新流
-			stream, err = configClient.CreateConfigUpdateStream(ctx)
+			stream, err = configClient.CreateConfigUpdateStream1(ctx)
 			if err != nil {
 				return nil, "", err
 			}
@@ -95,7 +94,7 @@ func TestDataCollectionService(t *testing.T) {
 		}
 
 		// 创建设备状态流的辅助函数
-		createStateInfoStream = func(t *testing.T, cid string) (stream v1.WarningDetect_CreateStateInfoSaveStreamClient, clientID string, err error) {
+		createStateInfoStream = func(t *testing.T, cid string) (stream v1.WarningDetect_CreateStateInfoSaveStream1Client, clientID string, err error) {
 			// 配置请求头
 			ctx := context.Background()
 			if cid != "" {
@@ -105,7 +104,7 @@ func TestDataCollectionService(t *testing.T) {
 			}
 
 			// 创建流
-			stream, err = warningDetectClient.CreateStateInfoSaveStream(ctx)
+			stream, err = warningDetectClient.CreateStateInfoSaveStream1(ctx)
 			if err != nil {
 				return nil, "", err
 			}
@@ -128,7 +127,7 @@ func TestDataCollectionService(t *testing.T) {
 		}
 
 		// 创建初始配置流的辅助函数
-		createInitConfigStream = func(t *testing.T, cid string) (stream v1.Config_CreateInitialConfigSaveStreamClient, err error) {
+		createInitConfigStream = func(t *testing.T, cid string) (stream v1.Config_CreateInitialConfigSaveStream1Client, err error) {
 			// 配置请求头
 			ctx := context.Background()
 			if cid != "" {
@@ -137,7 +136,7 @@ func TestDataCollectionService(t *testing.T) {
 					map[string][]string{service.CLIENT_ID_HEADER: {cid}})
 			}
 
-			stream, err = configClient.CreateInitialConfigSaveStream(ctx)
+			stream, err = configClient.CreateInitialConfigSaveStream1(ctx)
 			if err != nil {
 				return nil, err
 			}
@@ -155,7 +154,7 @@ func TestDataCollectionService(t *testing.T) {
 		}
 
 		// 发送配置更新http请求的辅助函数
-		sendUpdateConfigRequest = func(configs ...*utilApi.TestedDeviceConfig) error {
+		sendUpdateConfigRequest = func(configs ...*v1.DeviceConfig1) error {
 			for _, c := range configs {
 				id := biz.GetKey(&biz.DeviceGeneralInfo{
 					DeviceClassID: 0,
@@ -167,7 +166,7 @@ func TestDataCollectionService(t *testing.T) {
 					map[string]string{"X-Device-ID": id},
 				)
 
-				reply, err := configHttpClient.UpdateDeviceConfig(clientContext, c)
+				reply, err := configHttpClient.UpdateDeviceConfig1(clientContext, c)
 				if err != nil {
 					return err
 				}
@@ -179,7 +178,7 @@ func TestDataCollectionService(t *testing.T) {
 		}
 
 		// 检查配置更新流推送的更新消息是否正确的辅助函数
-		checkRecvConfig = func(stream v1.Config_CreateConfigUpdateStreamClient, configs ...*utilApi.TestedDeviceConfig) error {
+		checkRecvConfig = func(stream v1.Config_CreateConfigUpdateStream1Client, configs ...*v1.DeviceConfig1) error {
 			// 检查更新流中接收到的配置更新消息与http发送的是否一致
 			for i, c := range configs {
 				config, err := stream.Recv()
@@ -213,7 +212,7 @@ func TestDataCollectionService(t *testing.T) {
 	// 1. 测试通过上传设备初始配置，建立的设备配置更新路由是否可靠(clientID存在,注册新设备的分支)
 	t.Run("Test_SaveInitDeviceConfig", func(t *testing.T) {
 		// 设备初始配置信息
-		configs := []*utilApi.TestedDeviceConfig{
+		configs := []*v1.DeviceConfig1{
 			{
 				Id:     "test1",
 				Status: false,
@@ -229,7 +228,7 @@ func TestDataCollectionService(t *testing.T) {
 		}
 
 		// 建立更新流，获得clientID
-		var updateStream v1.Config_CreateConfigUpdateStreamClient
+		var updateStream v1.Config_CreateConfigUpdateStream1Client
 		updateStream, clientID1, err = createConfigUpdateStream(t, "")
 		if err != nil {
 			t.Error(err)
@@ -270,7 +269,7 @@ func TestDataCollectionService(t *testing.T) {
 	// 2. 测试通过上传设备状态信息，建立的设备配置更新路由是否可靠(clientID存在,注册新设备的分支)
 	t.Run("Test_CreateStateInfoSaveStream", func(t *testing.T) {
 		// 创建配置更新流，获取clientID
-		var updateStream v1.Config_CreateConfigUpdateStreamClient
+		var updateStream v1.Config_CreateConfigUpdateStream1Client
 		updateStream, clientID2, err = createConfigUpdateStream(t, "")
 		if err != nil {
 			t.Error(err)
@@ -286,7 +285,7 @@ func TestDataCollectionService(t *testing.T) {
 
 		// 定义需要传输的设备状态信息以及相对应的配置更新信息
 		// 需要与第一次子测试中配置的信息区分开，避免路由的重用
-		states := []*utilApi.TestedDeviceState{
+		states := []*v1.DeviceState1{
 			{
 				Id:          "test4",
 				Voltage:     1,
@@ -309,7 +308,7 @@ func TestDataCollectionService(t *testing.T) {
 				Time:        timestamppb.New(time.Now()),
 			},
 		}
-		configs := []*utilApi.TestedDeviceConfig{
+		configs := []*v1.DeviceConfig1{
 			{
 				Id:     "test4",
 				Status: false,
@@ -383,7 +382,7 @@ func TestDataCollectionService(t *testing.T) {
 
 		// 使用测试1中上传过的配置信息进行重新上传，
 		// 将test1和test2设备迁移至新clientID的路由上，而test3设备仍保持在clientID1对应的路由上
-		configs := []*utilApi.TestedDeviceConfig{
+		configs := []*v1.DeviceConfig1{
 			{
 				Id:     "test1",
 				Status: false,
@@ -426,7 +425,7 @@ func TestDataCollectionService(t *testing.T) {
 		}
 
 		// 发送关于test3的配置更新请求
-		config := &utilApi.TestedDeviceConfig{
+		config := &v1.DeviceConfig1{
 			Id:     "test3",
 			Status: false,
 		}
@@ -454,9 +453,9 @@ func TestDataCollectionService(t *testing.T) {
 		}
 
 		// 定义之前测试没有传输过的设备信息进行传输
-		states := make([]*utilApi.TestedDeviceState, len(deviceIDs))
+		states := make([]*v1.DeviceState1, len(deviceIDs))
 		for i, id := range deviceIDs {
-			states[i] = &utilApi.TestedDeviceState{Id: id, Time: timestamppb.New(time.Now())}
+			states[i] = &v1.DeviceState1{Id: id, Time: timestamppb.New(time.Now())}
 		}
 
 		for _, s := range states {
@@ -479,9 +478,9 @@ func TestDataCollectionService(t *testing.T) {
 		}
 
 		// 然后通过发送http请求以及建立设备更新流接收配置更新消息，验证路由配置是否有效
-		configs := make([]*utilApi.TestedDeviceConfig, len(deviceIDs))
+		configs := make([]*v1.DeviceConfig1, len(deviceIDs))
 		for i, id := range deviceIDs {
-			configs[i] = &utilApi.TestedDeviceConfig{Id: id}
+			configs[i] = &v1.DeviceConfig1{Id: id}
 		}
 
 		// 等待组件注册
@@ -523,7 +522,7 @@ func TestDataCollectionService(t *testing.T) {
 		// 等待路由自动注销触发
 		time.Sleep(bootstrap.Server.Gateway.RouteTimeout.AsDuration())
 
-		err := sendUpdateConfigRequest(&utilApi.TestedDeviceConfig{Id: "test3"})
+		err := sendUpdateConfigRequest(&v1.DeviceConfig1{Id: "test3"})
 		if err == nil {
 			t.Error("Failed to automatically unregister overtime route")
 			return

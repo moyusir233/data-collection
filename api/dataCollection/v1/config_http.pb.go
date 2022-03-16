@@ -18,12 +18,14 @@ var _ = binding.EncodeURL
 const _ = http.SupportPackageIsVersion1
 
 type ConfigHTTPServer interface {
-	UpdateDeviceConfig0(context.Context, *DeviceConfig0) (*ConfigServiceReply0, error)
+	UpdateDeviceConfig0(context.Context, *DeviceConfig0) (*ConfigServiceReply, error)
+	UpdateDeviceConfig1(context.Context, *DeviceConfig1) (*ConfigServiceReply, error)
 }
 
 func RegisterConfigHTTPServer(s *http.Server, srv ConfigHTTPServer) {
 	r := s.Route("/")
-	r.POST("/configs", _Config_UpdateDeviceConfig00_HTTP_Handler(srv))
+	r.POST("/configs/0", _Config_UpdateDeviceConfig00_HTTP_Handler(srv))
+	r.POST("/configs/1", _Config_UpdateDeviceConfig10_HTTP_Handler(srv))
 }
 
 func _Config_UpdateDeviceConfig00_HTTP_Handler(srv ConfigHTTPServer) func(ctx http.Context) error {
@@ -40,13 +42,33 @@ func _Config_UpdateDeviceConfig00_HTTP_Handler(srv ConfigHTTPServer) func(ctx ht
 		if err != nil {
 			return err
 		}
-		reply := out.(*ConfigServiceReply0)
+		reply := out.(*ConfigServiceReply)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _Config_UpdateDeviceConfig10_HTTP_Handler(srv ConfigHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in DeviceConfig1
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, "/api.dataCollection.v1.Config/UpdateDeviceConfig1")
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.UpdateDeviceConfig1(ctx, req.(*DeviceConfig1))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*ConfigServiceReply)
 		return ctx.Result(200, reply)
 	}
 }
 
 type ConfigHTTPClient interface {
-	UpdateDeviceConfig0(ctx context.Context, req *DeviceConfig0, opts ...http.CallOption) (rsp *ConfigServiceReply0, err error)
+	UpdateDeviceConfig0(ctx context.Context, req *DeviceConfig0, opts ...http.CallOption) (rsp *ConfigServiceReply, err error)
+	UpdateDeviceConfig1(ctx context.Context, req *DeviceConfig1, opts ...http.CallOption) (rsp *ConfigServiceReply, err error)
 }
 
 type ConfigHTTPClientImpl struct {
@@ -57,11 +79,24 @@ func NewConfigHTTPClient(client *http.Client) ConfigHTTPClient {
 	return &ConfigHTTPClientImpl{client}
 }
 
-func (c *ConfigHTTPClientImpl) UpdateDeviceConfig0(ctx context.Context, in *DeviceConfig0, opts ...http.CallOption) (*ConfigServiceReply0, error) {
-	var out ConfigServiceReply0
-	pattern := "/configs"
+func (c *ConfigHTTPClientImpl) UpdateDeviceConfig0(ctx context.Context, in *DeviceConfig0, opts ...http.CallOption) (*ConfigServiceReply, error) {
+	var out ConfigServiceReply
+	pattern := "/configs/0"
 	path := binding.EncodeURL(pattern, in, false)
 	opts = append(opts, http.Operation("/api.dataCollection.v1.Config/UpdateDeviceConfig0"))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, err
+}
+
+func (c *ConfigHTTPClientImpl) UpdateDeviceConfig1(ctx context.Context, in *DeviceConfig1, opts ...http.CallOption) (*ConfigServiceReply, error) {
+	var out ConfigServiceReply
+	pattern := "/configs/1"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation("/api.dataCollection.v1.Config/UpdateDeviceConfig1"))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
 	if err != nil {

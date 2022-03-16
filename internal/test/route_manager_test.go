@@ -29,7 +29,11 @@ func TestBiz_RouteManager(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	routeManager := biz.NewRouteManager(bootstrap.Server)
+	routeManager, err := biz.NewRouteManager(bootstrap.Server)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	info := &biz.DeviceGeneralInfo{
 		DeviceClassID: 0,
 		DeviceID:      "test",
@@ -39,7 +43,11 @@ func TestBiz_RouteManager(t *testing.T) {
 	}
 
 	// kong客户端和http客户端
-	admin := kong.NewAdmin(bootstrap.Server.Gateway.Address)
+	admin, err := kong.NewAdmin(bootstrap.Server.Gateway.Address)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	client := req.C().SetBaseURL(KONG_PROXY_ADDRESS).DevMode()
 
 	// 用于测试key-auth插件的consumer和key

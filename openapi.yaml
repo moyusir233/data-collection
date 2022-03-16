@@ -7,9 +7,8 @@ info:
     description: 预警检测服务，主要包括数据收集部分
     version: 0.0.1
 paths:
-    /configs:
+    /configs/0:
         post:
-            summary: 更新指定设备的配置
             operationId: Config_UpdateDeviceConfig0
             requestBody:
                 content:
@@ -23,14 +22,36 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/ConfigServiceReply0'
+                                $ref: '#/components/schemas/ConfigServiceReply'
+    /configs/1:
+        post:
+            operationId: Config_UpdateDeviceConfig1
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/DeviceConfig1'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ConfigServiceReply'
 components:
     schemas:
-        ConfigServiceReply0:
+        ConfigServiceReply:
             properties:
                 success:
                     type: boolean
         DeviceConfig0:
+            properties:
+                id:
+                    type: string
+                status:
+                    type: boolean
+        DeviceConfig1:
             properties:
                 id:
                     type: string

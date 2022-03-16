@@ -22,12 +22,12 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ConfigClient interface {
-	// 更新指定设备的配置
-	UpdateDeviceConfig0(ctx context.Context, in *DeviceConfig0, opts ...grpc.CallOption) (*ConfigServiceReply0, error)
-	// 用于和底层设备客户端建立用于配置更新的grpc数据流
+	UpdateDeviceConfig0(ctx context.Context, in *DeviceConfig0, opts ...grpc.CallOption) (*ConfigServiceReply, error)
 	CreateConfigUpdateStream0(ctx context.Context, opts ...grpc.CallOption) (Config_CreateConfigUpdateStream0Client, error)
-	// 从底层数据客户端收集设备初始配置
 	CreateInitialConfigSaveStream0(ctx context.Context, opts ...grpc.CallOption) (Config_CreateInitialConfigSaveStream0Client, error)
+	UpdateDeviceConfig1(ctx context.Context, in *DeviceConfig1, opts ...grpc.CallOption) (*ConfigServiceReply, error)
+	CreateConfigUpdateStream1(ctx context.Context, opts ...grpc.CallOption) (Config_CreateConfigUpdateStream1Client, error)
+	CreateInitialConfigSaveStream1(ctx context.Context, opts ...grpc.CallOption) (Config_CreateInitialConfigSaveStream1Client, error)
 }
 
 type configClient struct {
@@ -38,8 +38,8 @@ func NewConfigClient(cc grpc.ClientConnInterface) ConfigClient {
 	return &configClient{cc}
 }
 
-func (c *configClient) UpdateDeviceConfig0(ctx context.Context, in *DeviceConfig0, opts ...grpc.CallOption) (*ConfigServiceReply0, error) {
-	out := new(ConfigServiceReply0)
+func (c *configClient) UpdateDeviceConfig0(ctx context.Context, in *DeviceConfig0, opts ...grpc.CallOption) (*ConfigServiceReply, error) {
+	out := new(ConfigServiceReply)
 	err := c.cc.Invoke(ctx, "/api.dataCollection.v1.Config/UpdateDeviceConfig0", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -57,7 +57,7 @@ func (c *configClient) CreateConfigUpdateStream0(ctx context.Context, opts ...gr
 }
 
 type Config_CreateConfigUpdateStream0Client interface {
-	Send(*ConfigUpdateReply0) error
+	Send(*ConfigUpdateReply) error
 	Recv() (*DeviceConfig0, error)
 	grpc.ClientStream
 }
@@ -66,7 +66,7 @@ type configCreateConfigUpdateStream0Client struct {
 	grpc.ClientStream
 }
 
-func (x *configCreateConfigUpdateStream0Client) Send(m *ConfigUpdateReply0) error {
+func (x *configCreateConfigUpdateStream0Client) Send(m *ConfigUpdateReply) error {
 	return x.ClientStream.SendMsg(m)
 }
 
@@ -89,7 +89,7 @@ func (c *configClient) CreateInitialConfigSaveStream0(ctx context.Context, opts 
 
 type Config_CreateInitialConfigSaveStream0Client interface {
 	Send(*DeviceConfig0) error
-	CloseAndRecv() (*ConfigServiceReply0, error)
+	CloseAndRecv() (*ConfigServiceReply, error)
 	grpc.ClientStream
 }
 
@@ -101,11 +101,85 @@ func (x *configCreateInitialConfigSaveStream0Client) Send(m *DeviceConfig0) erro
 	return x.ClientStream.SendMsg(m)
 }
 
-func (x *configCreateInitialConfigSaveStream0Client) CloseAndRecv() (*ConfigServiceReply0, error) {
+func (x *configCreateInitialConfigSaveStream0Client) CloseAndRecv() (*ConfigServiceReply, error) {
 	if err := x.ClientStream.CloseSend(); err != nil {
 		return nil, err
 	}
-	m := new(ConfigServiceReply0)
+	m := new(ConfigServiceReply)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func (c *configClient) UpdateDeviceConfig1(ctx context.Context, in *DeviceConfig1, opts ...grpc.CallOption) (*ConfigServiceReply, error) {
+	out := new(ConfigServiceReply)
+	err := c.cc.Invoke(ctx, "/api.dataCollection.v1.Config/UpdateDeviceConfig1", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *configClient) CreateConfigUpdateStream1(ctx context.Context, opts ...grpc.CallOption) (Config_CreateConfigUpdateStream1Client, error) {
+	stream, err := c.cc.NewStream(ctx, &Config_ServiceDesc.Streams[2], "/api.dataCollection.v1.Config/CreateConfigUpdateStream1", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &configCreateConfigUpdateStream1Client{stream}
+	return x, nil
+}
+
+type Config_CreateConfigUpdateStream1Client interface {
+	Send(*ConfigUpdateReply) error
+	Recv() (*DeviceConfig1, error)
+	grpc.ClientStream
+}
+
+type configCreateConfigUpdateStream1Client struct {
+	grpc.ClientStream
+}
+
+func (x *configCreateConfigUpdateStream1Client) Send(m *ConfigUpdateReply) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *configCreateConfigUpdateStream1Client) Recv() (*DeviceConfig1, error) {
+	m := new(DeviceConfig1)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func (c *configClient) CreateInitialConfigSaveStream1(ctx context.Context, opts ...grpc.CallOption) (Config_CreateInitialConfigSaveStream1Client, error) {
+	stream, err := c.cc.NewStream(ctx, &Config_ServiceDesc.Streams[3], "/api.dataCollection.v1.Config/CreateInitialConfigSaveStream1", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &configCreateInitialConfigSaveStream1Client{stream}
+	return x, nil
+}
+
+type Config_CreateInitialConfigSaveStream1Client interface {
+	Send(*DeviceConfig1) error
+	CloseAndRecv() (*ConfigServiceReply, error)
+	grpc.ClientStream
+}
+
+type configCreateInitialConfigSaveStream1Client struct {
+	grpc.ClientStream
+}
+
+func (x *configCreateInitialConfigSaveStream1Client) Send(m *DeviceConfig1) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *configCreateInitialConfigSaveStream1Client) CloseAndRecv() (*ConfigServiceReply, error) {
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	m := new(ConfigServiceReply)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
@@ -116,12 +190,12 @@ func (x *configCreateInitialConfigSaveStream0Client) CloseAndRecv() (*ConfigServ
 // All implementations must embed UnimplementedConfigServer
 // for forward compatibility
 type ConfigServer interface {
-	// 更新指定设备的配置
-	UpdateDeviceConfig0(context.Context, *DeviceConfig0) (*ConfigServiceReply0, error)
-	// 用于和底层设备客户端建立用于配置更新的grpc数据流
+	UpdateDeviceConfig0(context.Context, *DeviceConfig0) (*ConfigServiceReply, error)
 	CreateConfigUpdateStream0(Config_CreateConfigUpdateStream0Server) error
-	// 从底层数据客户端收集设备初始配置
 	CreateInitialConfigSaveStream0(Config_CreateInitialConfigSaveStream0Server) error
+	UpdateDeviceConfig1(context.Context, *DeviceConfig1) (*ConfigServiceReply, error)
+	CreateConfigUpdateStream1(Config_CreateConfigUpdateStream1Server) error
+	CreateInitialConfigSaveStream1(Config_CreateInitialConfigSaveStream1Server) error
 	mustEmbedUnimplementedConfigServer()
 }
 
@@ -129,7 +203,7 @@ type ConfigServer interface {
 type UnimplementedConfigServer struct {
 }
 
-func (UnimplementedConfigServer) UpdateDeviceConfig0(context.Context, *DeviceConfig0) (*ConfigServiceReply0, error) {
+func (UnimplementedConfigServer) UpdateDeviceConfig0(context.Context, *DeviceConfig0) (*ConfigServiceReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateDeviceConfig0 not implemented")
 }
 func (UnimplementedConfigServer) CreateConfigUpdateStream0(Config_CreateConfigUpdateStream0Server) error {
@@ -137,6 +211,15 @@ func (UnimplementedConfigServer) CreateConfigUpdateStream0(Config_CreateConfigUp
 }
 func (UnimplementedConfigServer) CreateInitialConfigSaveStream0(Config_CreateInitialConfigSaveStream0Server) error {
 	return status.Errorf(codes.Unimplemented, "method CreateInitialConfigSaveStream0 not implemented")
+}
+func (UnimplementedConfigServer) UpdateDeviceConfig1(context.Context, *DeviceConfig1) (*ConfigServiceReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateDeviceConfig1 not implemented")
+}
+func (UnimplementedConfigServer) CreateConfigUpdateStream1(Config_CreateConfigUpdateStream1Server) error {
+	return status.Errorf(codes.Unimplemented, "method CreateConfigUpdateStream1 not implemented")
+}
+func (UnimplementedConfigServer) CreateInitialConfigSaveStream1(Config_CreateInitialConfigSaveStream1Server) error {
+	return status.Errorf(codes.Unimplemented, "method CreateInitialConfigSaveStream1 not implemented")
 }
 func (UnimplementedConfigServer) mustEmbedUnimplementedConfigServer() {}
 
@@ -175,7 +258,7 @@ func _Config_CreateConfigUpdateStream0_Handler(srv interface{}, stream grpc.Serv
 
 type Config_CreateConfigUpdateStream0Server interface {
 	Send(*DeviceConfig0) error
-	Recv() (*ConfigUpdateReply0, error)
+	Recv() (*ConfigUpdateReply, error)
 	grpc.ServerStream
 }
 
@@ -187,8 +270,8 @@ func (x *configCreateConfigUpdateStream0Server) Send(m *DeviceConfig0) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-func (x *configCreateConfigUpdateStream0Server) Recv() (*ConfigUpdateReply0, error) {
-	m := new(ConfigUpdateReply0)
+func (x *configCreateConfigUpdateStream0Server) Recv() (*ConfigUpdateReply, error) {
+	m := new(ConfigUpdateReply)
 	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
@@ -200,7 +283,7 @@ func _Config_CreateInitialConfigSaveStream0_Handler(srv interface{}, stream grpc
 }
 
 type Config_CreateInitialConfigSaveStream0Server interface {
-	SendAndClose(*ConfigServiceReply0) error
+	SendAndClose(*ConfigServiceReply) error
 	Recv() (*DeviceConfig0, error)
 	grpc.ServerStream
 }
@@ -209,12 +292,82 @@ type configCreateInitialConfigSaveStream0Server struct {
 	grpc.ServerStream
 }
 
-func (x *configCreateInitialConfigSaveStream0Server) SendAndClose(m *ConfigServiceReply0) error {
+func (x *configCreateInitialConfigSaveStream0Server) SendAndClose(m *ConfigServiceReply) error {
 	return x.ServerStream.SendMsg(m)
 }
 
 func (x *configCreateInitialConfigSaveStream0Server) Recv() (*DeviceConfig0, error) {
 	m := new(DeviceConfig0)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func _Config_UpdateDeviceConfig1_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeviceConfig1)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServer).UpdateDeviceConfig1(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/api.dataCollection.v1.Config/UpdateDeviceConfig1",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServer).UpdateDeviceConfig1(ctx, req.(*DeviceConfig1))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Config_CreateConfigUpdateStream1_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(ConfigServer).CreateConfigUpdateStream1(&configCreateConfigUpdateStream1Server{stream})
+}
+
+type Config_CreateConfigUpdateStream1Server interface {
+	Send(*DeviceConfig1) error
+	Recv() (*ConfigUpdateReply, error)
+	grpc.ServerStream
+}
+
+type configCreateConfigUpdateStream1Server struct {
+	grpc.ServerStream
+}
+
+func (x *configCreateConfigUpdateStream1Server) Send(m *DeviceConfig1) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *configCreateConfigUpdateStream1Server) Recv() (*ConfigUpdateReply, error) {
+	m := new(ConfigUpdateReply)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func _Config_CreateInitialConfigSaveStream1_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(ConfigServer).CreateInitialConfigSaveStream1(&configCreateInitialConfigSaveStream1Server{stream})
+}
+
+type Config_CreateInitialConfigSaveStream1Server interface {
+	SendAndClose(*ConfigServiceReply) error
+	Recv() (*DeviceConfig1, error)
+	grpc.ServerStream
+}
+
+type configCreateInitialConfigSaveStream1Server struct {
+	grpc.ServerStream
+}
+
+func (x *configCreateInitialConfigSaveStream1Server) SendAndClose(m *ConfigServiceReply) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *configCreateInitialConfigSaveStream1Server) Recv() (*DeviceConfig1, error) {
+	m := new(DeviceConfig1)
 	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
@@ -232,6 +385,10 @@ var Config_ServiceDesc = grpc.ServiceDesc{
 			MethodName: "UpdateDeviceConfig0",
 			Handler:    _Config_UpdateDeviceConfig0_Handler,
 		},
+		{
+			MethodName: "UpdateDeviceConfig1",
+			Handler:    _Config_UpdateDeviceConfig1_Handler,
+		},
 	},
 	Streams: []grpc.StreamDesc{
 		{
@@ -243,6 +400,17 @@ var Config_ServiceDesc = grpc.ServiceDesc{
 		{
 			StreamName:    "CreateInitialConfigSaveStream0",
 			Handler:       _Config_CreateInitialConfigSaveStream0_Handler,
+			ClientStreams: true,
+		},
+		{
+			StreamName:    "CreateConfigUpdateStream1",
+			Handler:       _Config_CreateConfigUpdateStream1_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
+		},
+		{
+			StreamName:    "CreateInitialConfigSaveStream1",
+			Handler:       _Config_CreateInitialConfigSaveStream1_Handler,
 			ClientStreams: true,
 		},
 	},
