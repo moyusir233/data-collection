@@ -1,6 +1,7 @@
 package conf
 
 import (
+	"fmt"
 	"github.com/go-kratos/kratos/v2/config"
 	"github.com/go-kratos/kratos/v2/config/file"
 	"log"
@@ -25,16 +26,20 @@ func initEnv() {
 	} else {
 		log.Fatalln("The required environment variable USERNAME is missing")
 	}
+
 	if serviceName, ok := os.LookupEnv("SERVICE_NAME"); ok {
 		ServiceName = serviceName
 	} else {
 		log.Fatalln("The required environment variable SERVICE_NAME is missing")
 	}
-	if serviceHost, ok := os.LookupEnv("SERVICE_HOST"); ok {
-		ServiceHost = serviceHost
+
+	if headlessServiceName, ok := os.LookupEnv("HEADLESS_SERVICE_NAME"); ok {
+		ServiceHost = fmt.Sprintf(
+			"%s.%s.production.svc.cluster.local", ServiceName, headlessServiceName)
 	} else {
 		log.Fatalln("The required environment variable SERVICE_HOST is missing")
 	}
+
 	if domainName, ok := os.LookupEnv("APP_DOMAIN_NAME"); ok {
 		AppDomainName = domainName
 	} else {
