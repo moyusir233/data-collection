@@ -1,9 +1,9 @@
 GOPATH:=$(shell go env GOPATH)
 VERSION=$(shell git describe --tags --always)
-#INTERNAL_PROTO_FILES=$(shell find internal -name *.proto)
-INTERNAL_PROTO_FILES=internal/conf/conf.proto
-#API_PROTO_FILES=$(shell find api -name *.proto)
-API_PROTO_FILES=api/dataCollection/v1/config.proto api/dataCollection/v1/warning_detect.proto
+INTERNAL_PROTO_FILES=$(shell find internal -name *.proto)
+#INTERNAL_PROTO_FILES=internal/conf/conf.proto
+API_PROTO_FILES=$(shell find api -name *.proto)
+#API_PROTO_FILES=api/dataCollection/v1/config.proto api/dataCollection/v1/warning_detect.proto
 
 .PHONY: init
 # init env
