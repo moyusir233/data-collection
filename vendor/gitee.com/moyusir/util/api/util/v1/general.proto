@@ -1,0 +1,126 @@
+syntax = "proto3";
+
+package api.util.v1;
+
+import "errors/errors.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "gitee.com/moyusir/util/api/util/v1;v1";
+option java_multiple_files = true;
+option java_package = "api.util.v1";
+
+// 错误原因定义
+enum ErrorReason{
+	// 缺省错误码
+	option (errors.default_code)=500;
+
+	// 违反预警规则
+    REGISTER_FORMAT_NONSTANDARD=0[(errors.code)=400];
+    // api网关连接失败
+    API_GATEWAY_CONNECT_FAIL=1[(errors.code)=500];
+    // 报文未正常发送
+    REQUEST_SEND_FAIL=2[(errors.code)=500];
+}
+// 可选的数据注册类型
+enum Type {
+    DOUBLE = 0;
+    INT32 = 1;
+    INT64 = 2;
+    UINT32 = 3;
+    UINT64 = 4;
+    BOOL = 5;
+    STRING = 6;
+    BYTE = 7;
+}
+// 用户注册信息
+message User {
+    // 用户id
+    string id = 1;
+    // 用户密码
+    string password = 2;
+}
+// 配置注册信息
+message DeviceConfigRegisterInfo {
+    // 配置注册信息字段
+    message Field {
+        // 配置字段名
+        string name = 1;
+        // 配置字段类型
+        Type type = 2;
+    }
+    // 单个设备的配置注册信息包含若干配置字段1
+    repeated Field fields = 1;
+}
+// 设备状态注册信息
+message DeviceStateRegisterInfo {
+    // 预警比较方法，用于预警检测时的判断
+    enum Cmp {
+        // 等于
+        EQ = 0;
+        // 大于
+        GT = 1;
+        // 小于
+        LT = 2;
+    }
+    // 数据聚合规则
+    enum AggregationOperation {
+        // 取平均值
+        AVG = 0;
+        // 取最大值
+        MAX = 1;
+        // 取最小值
+        MIN = 2;
+        // 取总和
+        SUM = 3;
+    }
+    // 预警比较规则，由比较方法和比较参数组成
+    message CmpRule {
+        Cmp cmp = 1;
+        // 预警比较方法对应的参数，解析时需对前端传来的arg进行类型检查
+        string arg = 2;
+    }
+    // 预警规则信息，预警时依据依据规则定义的比较规则，对指定时间范围内的数据查询，判断是否需要产生警告
+    message WarningRule {
+        // 预警比较规则
+        CmpRule cmp_rule = 1;
+        // 数据聚合操作
+        AggregationOperation aggregation_operation = 2;
+        // 指定的时间范围
+        google.protobuf.Duration duration = 3;
+    }
+    // 设备状态信息注册字段
+    message Field {
+        // 设备状态信息字段名
+        string name = 1;
+        // 设备状态信息字段类型
+        Type type = 2;
+        // 预警规则
+        WarningRule warning_rule = 3;
+    }
+    repeated Field fields = 1;
+}
+// 警告信息
+message Warning {
+    // 引发告警的设备的id
+    string device_id = 1;
+	// 设备字段
+	string device_field_name=2;
+	// 违反的告警规则
+	DeviceStateRegisterInfo.WarningRule warning_rule = 3;
+    // 告警出现的时间范围
+    google.protobuf.Timestamp start=4;
+	google.protobuf.Timestamp end=5;
+}
+// 测试中使用的设备状态信息和设备配置信息
+message TestedDeviceConfig{
+    string id=1;
+    bool status=2;
+}
+message TestedDeviceState{
+    string id=1;
+    google.protobuf.Timestamp time = 2;
+    double voltage=3;
+    double current=4;
+    double temperature=5;
+}
