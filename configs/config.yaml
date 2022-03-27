@@ -19,5 +19,5 @@ data:
     minIdleConns: 2
   influxdb:
     serverUrl: http://influxdb.test.svc.cluster.local:8086
-    authToken: ""
+    authToken: test
     org: test
