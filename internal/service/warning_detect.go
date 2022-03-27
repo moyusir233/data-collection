@@ -35,8 +35,11 @@ func (s *WarningDetectService) CreateStateInfoSaveStream0(conn pb.WarningDetect_
 		deviceClassID = 0
 		// 设备预警字段，代码生成时注入
 		fields = map[string]float64{
-			"Voltage": 0, "Current": 0, "Temperature": 0,
+			"Voltage": 0,
+			"Current": 0,
 		}
+		// 设备非时间，非id的字段，代码生成时注入
+		tags = map[string]string{}
 	)
 
 	// 检查请求头中是否包含clientID
@@ -73,19 +76,16 @@ func (s *WarningDetectService) CreateStateInfoSaveStream0(conn pb.WarningDetect_
 		// 提取设备状态信息进行路由激活以及保存
 		info := &biz.DeviceGeneralInfo{DeviceClassID: deviceClassID}
 		info.DeviceID = state.Id
-
+		// TODO 这里不应该使用反射去提取值，而是通过代码生成提取
 		fields["Voltage"] = state.Voltage
-
 		fields["Current"] = state.Current
-
-		fields["Temperature"] = state.Temperature
 
 		// TODO 考虑路由激活以及保存设备状态出错时如何处理
 		err = s.manager.ActivateRoute(clientID, info)
 		if err != nil {
 			return err
 		}
-		err = s.uc.SaveDeviceState(info, state, fields)
+		err = s.uc.SaveDeviceState(info, fields, tags)
 		if err != nil {
 			return err
 		}
@@ -104,8 +104,11 @@ func (s *WarningDetectService) CreateStateInfoSaveStream1(conn pb.WarningDetect_
 		deviceClassID = 1
 		// 设备预警字段，代码生成时注入
 		fields = map[string]float64{
-			"Voltage": 0, "Current": 0, "Temperature": 0,
+			"Voltage": 0,
+			"Current": 0,
 		}
+		// 设备非时间，非id的字段，代码生成时注入
+		tags = map[string]string{}
 	)
 
 	// 检查请求头中是否包含clientID
@@ -142,19 +145,16 @@ func (s *WarningDetectService) CreateStateInfoSaveStream1(conn pb.WarningDetect_
 		// 提取设备状态信息进行路由激活以及保存
 		info := &biz.DeviceGeneralInfo{DeviceClassID: deviceClassID}
 		info.DeviceID = state.Id
-
+		// TODO 这里不应该使用反射去提取值，而是通过代码生成提取
 		fields["Voltage"] = state.Voltage
-
 		fields["Current"] = state.Current
-
-		fields["Temperature"] = state.Temperature
 
 		// TODO 考虑路由激活以及保存设备状态出错时如何处理
 		err = s.manager.ActivateRoute(clientID, info)
 		if err != nil {
 			return err
 		}
-		err = s.uc.SaveDeviceState(info, state, fields)
+		err = s.uc.SaveDeviceState(info, fields, tags)
 		if err != nil {
 			return err
 		}

@@ -17,4 +17,7 @@ data:
     masterName: mymaster
     poolSize: 5
     minIdleConns: 2
-    tsRetention: 3600s
+  influxdb:
+    serverUrl: http://influxdb.test.svc.cluster.local:8086
+    authToken: ""
+    org: test

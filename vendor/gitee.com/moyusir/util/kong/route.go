@@ -45,7 +45,7 @@ type RouteCreateOption struct {
 	// route匹配的请求头
 	Headers map[string][]string `json:"headers,omitempty"`
 	// 通过其中一个路径匹配 Route 时，从上游请求 URL 中去除匹配的前缀,默认为true
-	StripPath bool `json:"strip_path"`
+	StripPath bool `json:"strip_path,omitempty"`
 	// 与该route关联的service
 	Service *struct {
 		Name string `json:"name,omitempty"`

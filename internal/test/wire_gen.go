@@ -20,19 +20,26 @@ import (
 
 // initApp init kratos application.
 func initApp(confServer *conf.Server, confData *conf.Data, logger log.Logger) (*kratos.App, func(), error) {
-	dataData, cleanup, err := data.NewData(confData, logger)
+	redisData, cleanup, err := data.NewRedisData(confData)
 	if err != nil {
 		return nil, nil, err
 	}
-	unionRepo := data.NewRedisRepo(dataData, logger)
-	configUsecase := biz.NewConfigUsecase(unionRepo, logger)
-	routeManager, err := biz.NewRouteManager(confServer)
+	influxdbData, cleanup2, err := data.NewInfluxdbData(confData)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
 	}
-	configService, cleanup2, err := service.NewConfigService(configUsecase, routeManager, logger)
+	unionRepo := data.NewRepo(redisData, influxdbData)
+	configUsecase := biz.NewConfigUsecase(unionRepo, logger)
+	routeManager, err := biz.NewRouteManager(confServer)
 	if err != nil {
+		cleanup2()
+		cleanup()
+		return nil, nil, err
+	}
+	configService, cleanup3, err := service.NewConfigService(configUsecase, routeManager, logger)
+	if err != nil {
+		cleanup2()
 		cleanup()
 		return nil, nil, err
 	}
@@ -42,6 +49,7 @@ func initApp(confServer *conf.Server, confData *conf.Data, logger log.Logger) (*
 	grpcServer := server.NewGRPCServer(confServer, configService, warningDetectService, logger)
 	app := newApp(logger, httpServer, grpcServer)
 	return app, func() {
+		cleanup3()
 		cleanup2()
 		cleanup()
 	}, nil
@@ -49,26 +57,38 @@ func initApp(confServer *conf.Server, confData *conf.Data, logger log.Logger) (*
 
 // InitConfigUsecase 测试用的辅助函数
 func InitConfigUsecase(confData *conf.Data, logger log.Logger) (*biz.ConfigUsecase, func(), error) {
-	dataData, cleanup, err := data.NewData(confData, logger)
+	redisData, cleanup, err := data.NewRedisData(confData)
 	if err != nil {
 		return nil, nil, err
 	}
-	unionRepo := data.NewRedisRepo(dataData, logger)
+	influxdbData, cleanup2, err := data.NewInfluxdbData(confData)
+	if err != nil {
+		cleanup()
+		return nil, nil, err
+	}
+	unionRepo := data.NewRepo(redisData, influxdbData)
 	configUsecase := biz.NewConfigUsecase(unionRepo, logger)
 	return configUsecase, func() {
+		cleanup2()
 		cleanup()
 	}, nil
 }
 
 // InitWarningDetectUsecase 测试用的辅助函数
 func InitWarningDetectUsecase(confData *conf.Data, logger log.Logger) (*biz.WarningDetectUsecase, func(), error) {
-	dataData, cleanup, err := data.NewData(confData, logger)
+	redisData, cleanup, err := data.NewRedisData(confData)
 	if err != nil {
 		return nil, nil, err
 	}
-	unionRepo := data.NewRedisRepo(dataData, logger)
+	influxdbData, cleanup2, err := data.NewInfluxdbData(confData)
+	if err != nil {
+		cleanup()
+		return nil, nil, err
+	}
+	unionRepo := data.NewRepo(redisData, influxdbData)
 	warningDetectUsecase := biz.NewWarningDetectUsecase(unionRepo, logger)
 	return warningDetectUsecase, func() {
+		cleanup2()
 		cleanup()
 	}, nil
 }

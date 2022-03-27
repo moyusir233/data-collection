@@ -46,8 +46,15 @@ message Data {
         int64 pool_size = 5;
         // redis连接池的最小空闲连接数
         int64 min_idle_conns = 6;
-        // ts的RETENTION参数
-        google.protobuf.Duration ts_retention=7;
+    }
+    message Influxdb{
+        // influxdb服务器的地址
+        string server_url=1;
+        // 读写influxdb所需的auth token
+        string auth_token=2;
+        // influxdb中用户的标识信息 organization
+        string org=3;
     }
     Redis redis = 1;
+    Influxdb influxdb = 2;
 }

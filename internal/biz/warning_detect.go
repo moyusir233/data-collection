@@ -2,7 +2,8 @@ package biz
 
 import (
 	"github.com/go-kratos/kratos/v2/log"
-	"google.golang.org/protobuf/proto"
+	"strconv"
+	"time"
 )
 
 // WarningDetectFieldLabelName 在创建设备预警字段相应ts的标签时使用的标签名
@@ -15,21 +16,15 @@ type WarningDetectUsecase struct {
 
 type WarningDetectRepo interface {
 	// SaveDeviceState 保存设备完整状态信息以及预警字段信息
-	SaveDeviceState(state *DeviceState, fields ...*DeviceStateField) error
+	SaveDeviceState(measurement *DeviceStateMeasurement) error
 }
 
-// DeviceState 代表一台设备完整的状态信息，利用protobuf编码，编码为二进制信息保存
-type DeviceState struct {
-	Timestamp int64
-	Key       string
-	Value     []byte
-}
-
-// DeviceStateField 代表设备状态信息中需要进行预警预测的字段
-type DeviceStateField struct {
-	Key   string
-	Value float64
-	Label string
+// DeviceStateMeasurement 每个设备状态信息以measurement的形式保存到influxdb中
+type DeviceStateMeasurement struct {
+	Name   string
+	Time   time.Time
+	Tags   map[string]string
+	Fields map[string]float64
 }
 
 func NewWarningDetectUsecase(repo UnionRepo, logger log.Logger) *WarningDetectUsecase {
@@ -39,33 +34,21 @@ func NewWarningDetectUsecase(repo UnionRepo, logger log.Logger) *WarningDetectUs
 	}
 }
 
-// SaveDeviceState 保存设备状态的完整信息以及预警字段信息,其中预警字段以<字段名>:<字段值>的形式传入函数
-func (u *WarningDetectUsecase) SaveDeviceState(info *DeviceGeneralInfo, state StateProtoMessage, fields map[string]float64) error {
-	var (
-		s = new(DeviceState)
-		f = make([]*DeviceStateField, 0, len(fields))
-	)
-	// 以<用户id>:device_state:<设备类别号>为键，在zset中保存
-	// 以timestamp为score，以设备状态二进制protobuf信息为value的键值对
-	s.Key = GetDeviceStateKey(info)
-	s.Timestamp = state.GetTime().AsTime().UnixMilli()
-	marshal, err := proto.Marshal(state)
-	if err != nil {
-		return err
+// SaveDeviceState 保存设备状态的完整信息以及预警字段信息,其中预警字段以<字段名>:<字段值>的map形式传入函数，
+// 非时间字段的设备字段被视作tag，也以map形式传入
+func (u *WarningDetectUsecase) SaveDeviceState(
+	info *DeviceGeneralInfo,
+	fields map[string]float64,
+	tags map[string]string) error {
+	// 设备的预警字段信息以influxdb measurement的形式，保存到用户id相应的bucket以及设备id相应的measurement
+	// 中，并以tag deviceClassID区分设备类别，各个字段的信息以field的形式保存在measurement的field中，
+	// 非时间的预警字段则作为measurement的tag保存进influxdb
+	tags["deviceClassID"] = strconv.Itoa(info.DeviceClassID)
+	measurement := &DeviceStateMeasurement{
+		Name:   info.DeviceID,
+		Tags:   tags,
+		Fields: fields,
 	}
-	s.Value = marshal
 
-	for k, v := range fields {
-		field := new(DeviceStateField)
-		// 每个预警字段保存到以<用户id>:device_state:<设备类别号>:<设备字段名>:<设备id>为key，
-		// 以<用户id>:<设备类别号>:<字段名>为标签值的ts中
-		field.Key, field.Label = GetDeviceStateFieldKeyAndLabel(info, k)
-		field.Value = v
-		f = append(f, field)
-	}
-	err = u.repo.SaveDeviceState(s, f...)
-	if err != nil {
-		return err
-	}
-	return nil
+	return u.repo.SaveDeviceState(measurement)
 }
