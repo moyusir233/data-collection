@@ -31,8 +31,7 @@ func TestDataCollectionService(t *testing.T) {
 		"USERNAME":           "test",
 		"DEVICE_CLASS_COUNT": "5",
 		"SERVICE_NAME":       "test",
-		"SERVICE_HOST":       "auto-test-server.test.svc.cluster.local",
-		"APP_DOMAIN_NAME":    "kong.test.svc.cluster.local",
+		"APP_DOMAIN_NAME":    "kong-proxy.test.svc.cluster.local",
 	}
 	bootstrap, err := generalInit("", envs)
 	if err != nil {

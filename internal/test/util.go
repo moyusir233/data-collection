@@ -76,7 +76,7 @@ func generalInit(path string, envs map[string]string) (*conf.Bootstrap, error) {
 func StartDataCollectionTestServer(t *testing.T, bootstrap *conf.Bootstrap) (
 	v1.ConfigClient, v1.ConfigHTTPClient, v1.WarningDetectClient) {
 	const (
-		KONG_HTTP_ADDRESS = "kong.test.svc.cluster.local:8000"
+		KONG_HTTP_ADDRESS = "kong-proxy.test.svc.cluster.local:8000"
 	)
 
 	logger := log.NewStdLogger(os.Stdout)

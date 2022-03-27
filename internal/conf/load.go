@@ -35,9 +35,9 @@ func initEnv() {
 
 	if headlessServiceName, ok := os.LookupEnv("HEADLESS_SERVICE_NAME"); ok {
 		ServiceHost = fmt.Sprintf(
-			"%s.%s.production.svc.cluster.local", ServiceName, headlessServiceName)
+			"%s.%s.test.svc.cluster.local", ServiceName, headlessServiceName)
 	} else {
-		log.Fatalln("The required environment variable SERVICE_HOST is missing")
+		ServiceHost = "auto-test-server.test.svc.cluster.local"
 	}
 
 	if domainName, ok := os.LookupEnv("APP_DOMAIN_NAME"); ok {
