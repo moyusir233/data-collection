@@ -38,7 +38,8 @@ func (r *Repo) SaveDeviceState(measurement *biz.DeviceStateMeasurement) error {
 	// 设备的预警字段信息以influxdb measurement的形式，保存到用户id相应的bucket以及设备id相应的measurement
 	// 中，并以tag deviceClassID区分设备类别，各个字段的信息以field的形式保存在measurement的field中，
 	// 非时间的预警字段则作为measurement的tag保存进influxdb
-	writeAPI := r.influxdbClient.WriteAPIBlocking(r.influxdbClient.org, conf.Username)
+	// TODO 使用异步写入的api时如何进行错误处理？
+	writeAPI := r.influxdbClient.WriteAPI(r.influxdbClient.org, conf.Username)
 
 	point := write.NewPointWithMeasurement(measurement.Name).SetTime(measurement.Time.UTC())
 	for k, v := range measurement.Tags {
@@ -49,5 +50,6 @@ func (r *Repo) SaveDeviceState(measurement *biz.DeviceStateMeasurement) error {
 	}
 	point.SortFields().SortTags()
 
-	return writeAPI.WritePoint(context.Background(), point)
+	writeAPI.WritePoint(point)
+	return nil
 }
