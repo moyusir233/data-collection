@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"gitee.com/moyusir/data-collection/internal/biz"
 	"gitee.com/moyusir/data-collection/internal/conf"
+	"github.com/go-kratos/kratos/v2/errors"
 	"github.com/influxdata/influxdb-client-go/v2/api/write"
 )
 
@@ -27,7 +28,8 @@ func (r *Repo) SaveDeviceConfig(key, field string, value []byte) error {
 	// 这里将value转换为十六进制的字符串进行保存
 	v := fmt.Sprintf("%x", value)
 	if err := r.redisClient.HSet(context.Background(), key, field, v).Err(); err != nil {
-		return err
+		return errors.Newf(
+			500, "Repo_Config_Error", "设备配置保存时发生了错误:%v", err)
 	}
 	return nil
 }

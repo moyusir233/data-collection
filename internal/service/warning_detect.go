@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"gitee.com/moyusir/data-collection/internal/biz"
 	"gitee.com/moyusir/data-collection/internal/conf"
+	"github.com/go-kratos/kratos/v2/errors"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 	"google.golang.org/grpc/metadata"
@@ -61,16 +62,22 @@ func (s *WarningDetectService) CreateStateInfoSaveStream0(conn pb.WarningDetect_
 	md = metadata.New(map[string]string{CLIENT_ID_HEADER: clientID})
 	// TODO 考虑错误处理
 	if err := conn.SendHeader(md); err != nil {
-		return err
+		return errors.Newf(
+			500, "Service_State_Error", "发送grpc请求头时发生了错误:%v", err)
 	}
+
+	s.logger.Infof("与 %v 建立了传输设备状态信息的grpc流", clientID)
 
 	for {
 		state, err := conn.Recv()
 		if err == io.EOF {
+			s.logger.Infof("关闭了 %v 的传输设备状态信息的grpc流", clientID)
 			return nil
 		}
 		if err != nil {
-			return err
+			return errors.Newf(
+				500, "Service_State_Error",
+				"接收用户 %v 传输的设备状态信息时发生了错误:%v", clientID, err)
 		}
 
 		// 提取设备状态信息进行路由激活以及保存
@@ -92,7 +99,9 @@ func (s *WarningDetectService) CreateStateInfoSaveStream0(conn pb.WarningDetect_
 
 		err = conn.Send(&pb.WarningDetectServiceReply{Success: true})
 		if err != nil {
-			return err
+			return errors.Newf(
+				500, "Service_State_Error",
+				"向用户 %v 发送传输设备状态的响应信息时发生了错误:%v", clientID, err)
 		}
 	}
 }

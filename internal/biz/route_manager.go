@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"gitee.com/moyusir/data-collection/internal/conf"
 	"gitee.com/moyusir/util/kong"
+	"github.com/go-kratos/kratos/v2/errors"
+	"github.com/go-kratos/kratos/v2/log"
 	"golang.org/x/sync/errgroup"
 	"time"
 )
@@ -29,9 +31,11 @@ type RouteManager struct {
 	eg   *errgroup.Group
 	ctx  context.Context
 	done context.CancelFunc
+	// 日志
+	logger *log.Helper
 }
 
-func NewRouteManager(c *conf.Server) (*RouteManager, error) {
+func NewRouteManager(c *conf.Server, logger log.Logger) (*RouteManager, error) {
 	// 初始化kong组件创建的默认配置
 	// 设备配置更新的相关路由组件都打上了conf.ServiceName的tag(即pod的名字)
 	// 方便容器关闭时组件的注销
@@ -92,6 +96,7 @@ func NewRouteManager(c *conf.Server) (*RouteManager, error) {
 		eg:      new(errgroup.Group),
 		ctx:     ctx,
 		done:    cancel,
+		logger:  log.NewHelper(logger),
 	}, nil
 }
 
@@ -104,7 +109,8 @@ func (r *RouteManager) Init() error {
 	for _, o := range options {
 		_, err := r.gateway.Create(o)
 		if err != nil {
-			return err
+			return errors.Newf(
+				500, "Biz_Config_Error", "创建路由组件时发生了错误:%v", err)
 		}
 		// 组件创建需要间隔一段时间
 		time.Sleep(500 * time.Millisecond)
@@ -234,14 +240,25 @@ func (r *RouteManager) ActivateRoute(clientID string, info *DeviceGeneralInfo) e
 		// 路由的创建失败大部分原因下是由于负载均衡导致客户端在多个容器服务处
 		// 注册了路由信息，造成路由创建冲突，此时更新相应的路由信息即可
 		if err != nil {
-			r := route.(*kong.Route)
-			r.Name = key
-			r.Update(option)
+			r.logger.Errorf("创建路由时发生了错误:%v", err)
+			re := route.(*kong.Route)
+			re.Name = key
+			err = re.Update(option)
+			if err != nil {
+				r.logger.Errorf("更新路由时发生了错误:%v", err)
+			}
 		}
 	}
 	// 重置定时器，相当于激活路由
 	(*root).UnregisterTicker.Reset(r.timeout)
-	return err
+	r.logger.Infof("激活了设备 %v 的路由", key)
+
+	if err != nil {
+		return errors.Newf(
+			500, "Biz_Config_Error", "激活路由时发生了错误:%v", err)
+	} else {
+		return nil
+	}
 }
 
 // UnRegisterRoute 注销路由，包括网关路由信息与路由表中信息(将相关联的route组统一注销，用于客户端正常断联时)

@@ -1,6 +1,7 @@
 package biz
 
 import (
+	"github.com/go-kratos/kratos/v2/errors"
 	"github.com/go-kratos/kratos/v2/log"
 	"google.golang.org/protobuf/proto"
 )
@@ -28,7 +29,8 @@ func (u *ConfigUsecase) SaveDeviceConfig(info *DeviceGeneralInfo, config proto.M
 	key := GetDeviceConfigKey(info)
 	marshal, err := proto.Marshal(config)
 	if err != nil {
-		return err
+		return errors.Newf(
+			500, "Biz_Config_Error", "序列化设备配置信息时发生了错误:%v", err)
 	}
 	err = u.repo.SaveDeviceConfig(key, info.DeviceID, marshal)
 	if err != nil {

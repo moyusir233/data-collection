@@ -31,7 +31,7 @@ func initApp(confServer *conf.Server, confData *conf.Data, logger log.Logger) (*
 	}
 	unionRepo := data.NewRepo(redisData, influxdbData)
 	configUsecase := biz.NewConfigUsecase(unionRepo, logger)
-	routeManager, err := biz.NewRouteManager(confServer)
+	routeManager, err := biz.NewRouteManager(confServer, logger)
 	if err != nil {
 		cleanup2()
 		cleanup()

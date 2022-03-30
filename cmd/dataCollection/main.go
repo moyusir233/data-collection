@@ -48,22 +48,22 @@ func main() {
 		"caller", log.DefaultCaller,
 		"service.id", id,
 		"service.name", Name,
-		"service.version", Version,
 	)
+	helper := log.NewHelper(logger)
 
 	bc, err := conf.LoadConfig(flagconf)
 	if err != nil {
-		panic(err)
+		helper.Fatalf("导入配置时发生了错误:%v", err)
 	}
 
 	app, cleanup, err := initApp(bc.Server, bc.Data, logger)
 	if err != nil {
-		panic(err)
+		helper.Fatalf("应用初始化时发生了错误:%v", err)
 	}
 	defer cleanup()
 
 	// start and wait for stop signal
 	if err := app.Run(); err != nil {
-		panic(err)
+		helper.Fatalf("应用运行时发生了错误:%v", err)
 	}
 }
