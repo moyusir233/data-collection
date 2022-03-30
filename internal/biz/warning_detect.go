@@ -38,17 +38,18 @@ func NewWarningDetectUsecase(repo UnionRepo, logger log.Logger) *WarningDetectUs
 // 非时间字段的设备字段被视作tag，也以map形式传入
 func (u *WarningDetectUsecase) SaveDeviceState(
 	info *DeviceGeneralInfo,
+	time time.Time,
 	fields map[string]float64,
 	tags map[string]string) error {
 	// 设备的预警字段信息以influxdb measurement的形式，保存到用户id相应的bucket以及设备id相应的measurement
 	// 中，并以tag deviceClassID区分设备类别，各个字段的信息以field的形式保存在measurement的field中，
 	// 非时间的预警字段则作为measurement的tag保存进influxdb
 	tags["deviceClassID"] = strconv.Itoa(info.DeviceClassID)
-	measurement := &DeviceStateMeasurement{
+
+	return u.repo.SaveDeviceState(&DeviceStateMeasurement{
 		Name:   info.DeviceID,
+		Time:   time,
 		Tags:   tags,
 		Fields: fields,
-	}
-
-	return u.repo.SaveDeviceState(measurement)
+	})
 }

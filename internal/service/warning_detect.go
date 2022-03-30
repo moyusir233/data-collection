@@ -85,7 +85,7 @@ func (s *WarningDetectService) CreateStateInfoSaveStream0(conn pb.WarningDetect_
 		if err != nil {
 			return err
 		}
-		err = s.uc.SaveDeviceState(info, fields, tags)
+		err = s.uc.SaveDeviceState(info, state.Time.AsTime(), fields, tags)
 		if err != nil {
 			return err
 		}
@@ -154,7 +154,7 @@ func (s *WarningDetectService) CreateStateInfoSaveStream1(conn pb.WarningDetect_
 		if err != nil {
 			return err
 		}
-		err = s.uc.SaveDeviceState(info, fields, tags)
+		err = s.uc.SaveDeviceState(info, state.Time.AsTime(), fields, tags)
 		if err != nil {
 			return err
 		}
