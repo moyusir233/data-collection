@@ -152,7 +152,7 @@ func TestDataCollectionService(t *testing.T) {
 		// 发送配置更新http请求的辅助函数
 		sendUpdateConfigRequest = func(configs ...*v1.DeviceConfig1) error {
 			for _, c := range configs {
-				id := biz.GetKey(&biz.DeviceGeneralInfo{
+				id := biz.GetDeviceKey(&biz.DeviceGeneralInfo{
 					DeviceClassID: 1,
 					DeviceID:      c.Id,
 				})

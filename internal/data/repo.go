@@ -51,7 +51,77 @@ func (r *Repo) SaveDeviceState(measurement *biz.DeviceStateMeasurement) error {
 		point.AddField(k, v)
 	}
 	point.SortFields().SortTags()
-
+	r.redisClient.Subscribe(context.Background()).Channel()
 	writeAPI.WritePoint(point)
 	return nil
+}
+
+func (r *Repo) GetMsgChannel(ctx context.Context, name string) (msgChan <-chan string, err error) {
+	subscribe := r.redisClient.Subscribe(ctx, name)
+	messages := subscribe.Channel()
+
+	messageChan := make(chan string)
+	go func() {
+		defer close(messageChan)
+		defer subscribe.Unsubscribe(ctx, name)
+		defer subscribe.Close()
+
+		for {
+			select {
+			case <-ctx.Done():
+			case msg := <-messages:
+				if msg.Payload != "" {
+					messageChan <- msg.Payload
+				}
+				for _, m := range msg.PayloadSlice {
+					if m != "" {
+						messageChan <- m
+					}
+				}
+			}
+		}
+	}()
+
+	return messageChan, nil
+}
+
+func (r *Repo) PublishMsg(channel string, message ...string) error {
+	err := r.redisClient.Publish(context.Background(), channel, message).Err()
+	if err != nil {
+		return errors.Newf(
+			500, "Repo_Config_Error", "发布消息时发生了错误:%v", err)
+	}
+	return nil
+}
+
+func (r *Repo) AddFieldValuePair(key, field, value string) error {
+	err := r.redisClient.HSet(context.Background(), key, field, value).Err()
+	if err != nil {
+		return errors.Newf(
+			500, "Repo_Config_Error", "保存hash键值对时发生了错误:%v", err)
+	}
+
+	return nil
+}
+
+func (r *Repo) GetValueOfField(key, field string) (value string, err error) {
+	value, err = r.redisClient.HGet(context.Background(), key, field).Result()
+	if err != nil {
+		return "", errors.Newf(
+			500, "Repo_Config_Error", "查询hash键值对时发生了错误:%v", err)
+	}
+
+	return
+}
+
+// CreateClientID 利用redis的自增函数产生分布式全局唯一的clientID
+func (r *Repo) CreateClientID() (string, error) {
+	result, err := r.redisClient.HIncrBy(
+		context.Background(), "clientID", conf.Username, 1).Result()
+	if err != nil {
+		return "", errors.Newf(
+			500, "Repo_Config_Error", "创建clientID时发生了错误:%v", err)
+	}
+
+	return fmt.Sprintf("%s_%d", conf.Username, result), nil
 }

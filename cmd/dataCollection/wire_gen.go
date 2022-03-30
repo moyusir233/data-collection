@@ -31,13 +31,8 @@ func initApp(confServer *conf.Server, confData *conf.Data, logger log.Logger) (*
 	}
 	unionRepo := data.NewRepo(redisData, influxdbData)
 	configUsecase := biz.NewConfigUsecase(unionRepo, logger)
-	routeManager, err := biz.NewRouteManager(confServer, logger)
-	if err != nil {
-		cleanup2()
-		cleanup()
-		return nil, nil, err
-	}
-	configService, cleanup3, err := service.NewConfigService(configUsecase, routeManager, logger)
+	deviceConfigUpdater := biz.NewDeviceConfigUpdater(unionRepo, logger)
+	configService, err := service.NewConfigService(configUsecase, deviceConfigUpdater, logger)
 	if err != nil {
 		cleanup2()
 		cleanup()
@@ -45,11 +40,10 @@ func initApp(confServer *conf.Server, confData *conf.Data, logger log.Logger) (*
 	}
 	httpServer := server.NewHTTPServer(confServer, configService, logger)
 	warningDetectUsecase := biz.NewWarningDetectUsecase(unionRepo, logger)
-	warningDetectService := service.NewWarningDetectService(warningDetectUsecase, routeManager, logger)
+	warningDetectService := service.NewWarningDetectService(warningDetectUsecase, deviceConfigUpdater, logger)
 	grpcServer := server.NewGRPCServer(confServer, configService, warningDetectService, logger)
 	app := newApp(logger, httpServer, grpcServer)
 	return app, func() {
-		cleanup3()
 		cleanup2()
 		cleanup()
 	}, nil

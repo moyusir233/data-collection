@@ -1,30 +1,25 @@
 package service
 
 import (
-	"fmt"
+	pb "gitee.com/moyusir/data-collection/api/dataCollection/v1"
 	"gitee.com/moyusir/data-collection/internal/biz"
-	"gitee.com/moyusir/data-collection/internal/conf"
 	"github.com/go-kratos/kratos/v2/errors"
 	"github.com/go-kratos/kratos/v2/log"
-	"github.com/google/uuid"
 	"google.golang.org/grpc/metadata"
 	"io"
-	"time"
-
-	pb "gitee.com/moyusir/data-collection/api/dataCollection/v1"
 )
 
 type WarningDetectService struct {
 	pb.UnimplementedWarningDetectServer
 	uc      *biz.WarningDetectUsecase
-	manager *biz.RouteManager
+	updater *biz.DeviceConfigUpdater
 	logger  *log.Helper
 }
 
-func NewWarningDetectService(uc *biz.WarningDetectUsecase, r *biz.RouteManager, logger log.Logger) *WarningDetectService {
+func NewWarningDetectService(uc *biz.WarningDetectUsecase, updater *biz.DeviceConfigUpdater, logger log.Logger) *WarningDetectService {
 	return &WarningDetectService{
 		uc:      uc,
-		manager: r,
+		updater: updater,
 		logger:  log.NewHelper(logger),
 	}
 }
@@ -48,13 +43,21 @@ func (s *WarningDetectService) CreateStateInfoSaveStream0(conn pb.WarningDetect_
 	if value := md.Get(CLIENT_ID_HEADER); ok && len(value) != 0 {
 		clientID = value[0]
 	} else {
-		// 若请求头中不存在，则分配clientID，通过响应头并发送给客户端
-		// 利用uuid作为clientID，使用的uuid version1
-		uid, err := uuid.NewUUID()
+		// 若请求头中不存在，则申请创建新的clientID，通过响应头并发送给客户端
+		id, err := s.updater.CreateClientID()
 		if err != nil {
-			clientID = fmt.Sprintf("%s%d", conf.Username, time.Now().Unix())
+			return err
 		} else {
-			clientID = uid.String()
+			clientID = id
+		}
+
+		// 将clientID存放到响应头中发送
+		md = metadata.New(map[string]string{CLIENT_ID_HEADER: clientID})
+		err = conn.SendHeader(md)
+		// TODO 考虑错误处理
+		if err != nil {
+			return errors.Newf(
+				500, "Service_State_Error", "发送grpc请求头时发生了错误:%v", err)
 		}
 	}
 
@@ -88,7 +91,7 @@ func (s *WarningDetectService) CreateStateInfoSaveStream0(conn pb.WarningDetect_
 		fields["Current"] = state.Current
 
 		// TODO 考虑路由激活以及保存设备状态出错时如何处理
-		err = s.manager.ActivateRoute(clientID, info)
+		err = s.updater.ConnectDeviceAndClientID(clientID, info)
 		if err != nil {
 			return err
 		}
@@ -125,13 +128,21 @@ func (s *WarningDetectService) CreateStateInfoSaveStream1(conn pb.WarningDetect_
 	if value := md.Get(CLIENT_ID_HEADER); ok && len(value) != 0 {
 		clientID = value[0]
 	} else {
-		// 若请求头中不存在，则分配clientID，通过响应头并发送给客户端
-		// 利用uuid作为clientID，使用的uuid version1
-		uid, err := uuid.NewUUID()
+		// 若请求头中不存在，则申请创建新的clientID，通过响应头并发送给客户端
+		id, err := s.updater.CreateClientID()
 		if err != nil {
-			clientID = fmt.Sprintf("%s%d", conf.Username, time.Now().Unix())
+			return err
 		} else {
-			clientID = uid.String()
+			clientID = id
+		}
+
+		// 将clientID存放到响应头中发送
+		md = metadata.New(map[string]string{CLIENT_ID_HEADER: clientID})
+		err = conn.SendHeader(md)
+		// TODO 考虑错误处理
+		if err != nil {
+			return errors.Newf(
+				500, "Service_State_Error", "发送grpc请求头时发生了错误:%v", err)
 		}
 	}
 
@@ -159,7 +170,7 @@ func (s *WarningDetectService) CreateStateInfoSaveStream1(conn pb.WarningDetect_
 		fields["Current"] = state.Current
 
 		// TODO 考虑路由激活以及保存设备状态出错时如何处理
-		err = s.manager.ActivateRoute(clientID, info)
+		err = s.updater.ConnectDeviceAndClientID(clientID, info)
 		if err != nil {
 			return err
 		}

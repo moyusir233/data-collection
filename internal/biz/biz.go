@@ -9,7 +9,7 @@ import (
 )
 
 // ProviderSet is biz providers.
-var ProviderSet = wire.NewSet(NewConfigUsecase, NewWarningDetectUsecase, NewRouteManager)
+var ProviderSet = wire.NewSet(NewConfigUsecase, NewWarningDetectUsecase, NewDeviceConfigUpdater)
 
 // DeviceGeneralInfo 设备基本信息
 type DeviceGeneralInfo struct {
@@ -21,6 +21,7 @@ type DeviceGeneralInfo struct {
 type UnionRepo interface {
 	ConfigRepo
 	WarningDetectRepo
+	PubSubClient
 }
 
 // StateProtoMessage 用于规范设备状态信息定义的接口
