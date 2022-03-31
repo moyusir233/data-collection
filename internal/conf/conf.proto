@@ -23,13 +23,8 @@ message Server {
         string addr = 2;
         google.protobuf.Duration timeout = 3;
     }
-    message Gateway {
-        string address = 1;
-        google.protobuf.Duration route_timeout = 2;
-    }
     HTTP http = 1;
     GRPC grpc = 2;
-    Gateway gateway = 3;
 }
 
 message Data {

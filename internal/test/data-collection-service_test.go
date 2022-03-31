@@ -28,10 +28,7 @@ func TestDataCollectionService(t *testing.T) {
 
 	// 初始化测试所需环境变量
 	envs := map[string]string{
-		"USERNAME":           "test",
-		"DEVICE_CLASS_COUNT": "5",
-		"SERVICE_NAME":       "test",
-		"APP_DOMAIN_NAME":    "kong-proxy.test.svc.cluster.local",
+		"USERNAME": "test",
 	}
 	bootstrap, err := generalInit("", envs)
 	if err != nil {
@@ -511,17 +508,4 @@ func TestDataCollectionService(t *testing.T) {
 		testUseUnknownClientID(t, "test4", "test5", "test6")
 	})
 
-	// 6. 测试路由自动注销功能
-	t.Run("Test_AutoUnregisterRoute", func(t *testing.T) {
-		// 之前测试中clientID1仍保存着test3设备的路由信息
-		// 这里拿来测试路由自动注销
-		// 等待路由自动注销触发
-		time.Sleep(bootstrap.Server.Gateway.RouteTimeout.AsDuration())
-
-		err := sendUpdateConfigRequest(&v1.DeviceConfig1{Id: "test3"})
-		if err == nil {
-			t.Error("Failed to automatically unregister overtime route")
-			return
-		}
-	})
 }

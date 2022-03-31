@@ -4,10 +4,8 @@ import (
 	"context"
 	v1 "gitee.com/moyusir/data-collection/api/dataCollection/v1"
 	"gitee.com/moyusir/data-collection/internal/conf"
-	"gitee.com/moyusir/util/kong"
 	"github.com/go-kratos/kratos/v2"
 	"github.com/go-kratos/kratos/v2/log"
-	middlewareMD "github.com/go-kratos/kratos/v2/middleware/metadata"
 	"github.com/go-kratos/kratos/v2/transport/grpc"
 	"github.com/go-kratos/kratos/v2/transport/http"
 	g "google.golang.org/grpc"
@@ -42,11 +40,7 @@ func generalInit(path string, envs map[string]string) (*conf.Bootstrap, error) {
 	// 初始化测试所需环境变量
 	// 环境变量的默认选项
 	defaultEnvs := map[string]string{
-		"USERNAME":           "test",
-		"DEVICE_CLASS_COUNT": "",
-		"SERVICE_NAME":       "",
-		"SERVICE_HOST":       "",
-		"APP_DOMAIN_NAME":    "",
+		"USERNAME": "test",
 	}
 
 	for k, v := range envs {
@@ -75,10 +69,6 @@ func generalInit(path string, envs map[string]string) (*conf.Bootstrap, error) {
 // StartDataCollectionTestServer 开启提供dataCollection服务的测试服务器，并返回相应服务的客户端
 func StartDataCollectionTestServer(t *testing.T, bootstrap *conf.Bootstrap) (
 	v1.ConfigClient, v1.ConfigHTTPClient, v1.WarningDetectClient) {
-	const (
-		KONG_HTTP_ADDRESS = "kong-proxy.test.svc.cluster.local:8000"
-	)
-
 	logger := log.NewStdLogger(os.Stdout)
 	app, cleanUp, err := initApp(bootstrap.Server, bootstrap.Data, logger)
 	if err != nil {
@@ -107,32 +97,7 @@ func StartDataCollectionTestServer(t *testing.T, bootstrap *conf.Bootstrap) (
 		configClient        v1.ConfigClient
 		warningDetectClient v1.WarningDetectClient
 		configHttpClient    v1.ConfigHTTPClient
-		admin               *kong.Admin
-		apiKey              *kong.Key
 	)
-
-	// 创建网关客户端，并创建api密钥
-	admin, err = kong.NewAdmin(bootstrap.Server.Gateway.Address)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	consumer, err := admin.Create(&kong.ConsumerCreateOption{Username: "test"})
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() {
-		admin.Delete(consumer)
-	})
-
-	key, err := admin.Create(&kong.KeyCreateOption{Username: "test"})
-	if err != nil {
-		t.Fatal(err)
-	}
-	apiKey = key.(*kong.Key)
-	t.Cleanup(func() {
-		admin.Delete(key)
-	})
 
 	// 创建http与grpc的连接与客户端
 initClient:
@@ -155,16 +120,10 @@ initClient:
 				warningDetectClient = v1.NewWarningDetectClient(grpcConn)
 			}
 
-			// 创建http客户端时，为了通过网关进行转发，需要配置请求头的插件，存放密钥和路由的请求头
+			// 创建http客户端
 			httpConn, err = http.NewClient(
 				context.Background(),
-				http.WithEndpoint(KONG_HTTP_ADDRESS),
-				http.WithMiddleware(
-					middlewareMD.Client(
-						middlewareMD.WithPropagatedPrefix("X-Device-ID"),
-						middlewareMD.WithConstants(map[string]string{"X-Api-Key": apiKey.Key}),
-					),
-				),
+				http.WithEndpoint("localhost:8000"),
 			)
 
 			if err != nil {

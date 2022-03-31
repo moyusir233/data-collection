@@ -6,9 +6,6 @@ server:
   grpc:
     addr: 0.0.0.0:9000
     timeout: 60s
-  gateway:
-    address: http://kong.test.svc.cluster.local:8001
-    routeTimeout: 20s
 data:
   redis:
     host: test-redis.test.svc.cluster.local
