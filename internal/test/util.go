@@ -69,7 +69,10 @@ func generalInit(path string, envs map[string]string) (*conf.Bootstrap, error) {
 // StartDataCollectionTestServer 开启提供dataCollection服务的测试服务器，并返回相应服务的客户端
 func StartDataCollectionTestServer(t *testing.T, bootstrap *conf.Bootstrap) (
 	v1.ConfigClient, v1.ConfigHTTPClient, v1.WarningDetectClient) {
-	logger := log.NewStdLogger(os.Stdout)
+	logger := log.With(log.NewStdLogger(os.Stdout),
+		"ts", log.DefaultTimestamp,
+		"caller", log.DefaultCaller,
+	)
 	app, cleanUp, err := initApp(bootstrap.Server, bootstrap.Data, logger)
 	if err != nil {
 		t.Fatal(err)

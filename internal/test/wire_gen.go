@@ -29,7 +29,7 @@ func initApp(confServer *conf.Server, confData *conf.Data, logger log.Logger) (*
 		cleanup()
 		return nil, nil, err
 	}
-	unionRepo := data.NewRepo(redisData, influxdbData)
+	unionRepo := data.NewRepo(redisData, influxdbData, logger)
 	configUsecase := biz.NewConfigUsecase(unionRepo, logger)
 	deviceConfigUpdater := biz.NewDeviceConfigUpdater(unionRepo, logger)
 	configService, err := service.NewConfigService(configUsecase, deviceConfigUpdater, logger)
@@ -60,7 +60,7 @@ func InitConfigUsecase(confData *conf.Data, logger log.Logger) (*biz.ConfigUseca
 		cleanup()
 		return nil, nil, err
 	}
-	unionRepo := data.NewRepo(redisData, influxdbData)
+	unionRepo := data.NewRepo(redisData, influxdbData, logger)
 	configUsecase := biz.NewConfigUsecase(unionRepo, logger)
 	return configUsecase, func() {
 		cleanup2()
@@ -79,7 +79,7 @@ func InitWarningDetectUsecase(confData *conf.Data, logger log.Logger) (*biz.Warn
 		cleanup()
 		return nil, nil, err
 	}
-	unionRepo := data.NewRepo(redisData, influxdbData)
+	unionRepo := data.NewRepo(redisData, influxdbData, logger)
 	warningDetectUsecase := biz.NewWarningDetectUsecase(unionRepo, logger)
 	return warningDetectUsecase, func() {
 		cleanup2()

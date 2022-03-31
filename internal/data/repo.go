@@ -6,6 +6,7 @@ import (
 	"gitee.com/moyusir/data-collection/internal/biz"
 	"gitee.com/moyusir/data-collection/internal/conf"
 	"github.com/go-kratos/kratos/v2/errors"
+	"github.com/go-kratos/kratos/v2/log"
 	"github.com/influxdata/influxdb-client-go/v2/api/write"
 )
 
@@ -13,13 +14,15 @@ import (
 type Repo struct {
 	redisClient    *RedisData
 	influxdbClient *InfluxdbData
+	logger         *log.Helper
 }
 
 // NewRepo 实例化redis数据库操作对象
-func NewRepo(redisData *RedisData, influxdbData *InfluxdbData) biz.UnionRepo {
+func NewRepo(redisData *RedisData, influxdbData *InfluxdbData, logger log.Logger) biz.UnionRepo {
 	return &Repo{
 		redisClient:    redisData,
 		influxdbClient: influxdbData,
+		logger:         log.NewHelper(logger),
 	}
 }
 
@@ -58,18 +61,28 @@ func (r *Repo) SaveDeviceState(measurement *biz.DeviceStateMeasurement) error {
 
 func (r *Repo) GetMsgChannel(ctx context.Context, name string) (msgChan <-chan string, err error) {
 	subscribe := r.redisClient.Subscribe(ctx, name)
+	r.logger.Infof("订阅了频道:%v", name)
 	messages := subscribe.Channel()
-
-	messageChan := make(chan string)
+	messageChan := make(chan string, 100)
 	go func() {
-		defer close(messageChan)
-		defer subscribe.Unsubscribe(ctx, name)
-		defer subscribe.Close()
+		defer func() {
+			close(messageChan)
+			err := subscribe.Close()
+			if err != nil {
+				r.logger.Errorf("关闭 %v 的订阅对象时发生了错误:%v", name, err)
+				return
+			}
+			r.logger.Infof("取消了 %v 频道的订阅", name)
+		}()
 
 		for {
 			select {
 			case <-ctx.Done():
+				return
 			case msg := <-messages:
+				if msg == nil {
+					continue
+				}
 				if msg.Payload != "" {
 					messageChan <- msg.Payload
 				}
@@ -86,10 +99,12 @@ func (r *Repo) GetMsgChannel(ctx context.Context, name string) (msgChan <-chan s
 }
 
 func (r *Repo) PublishMsg(channel string, message ...string) error {
-	err := r.redisClient.Publish(context.Background(), channel, message).Err()
-	if err != nil {
-		return errors.Newf(
-			500, "Repo_Config_Error", "发布消息时发生了错误:%v", err)
+	for _, msg := range message {
+		err := r.redisClient.Publish(context.Background(), channel, msg).Err()
+		if err != nil {
+			return errors.Newf(
+				500, "Repo_Config_Error", "发布消息时发生了错误:%v", err)
+		}
 	}
 	return nil
 }

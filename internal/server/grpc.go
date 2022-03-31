@@ -8,6 +8,8 @@ import (
 	"github.com/go-kratos/kratos/v2/middleware/logging"
 	"github.com/go-kratos/kratos/v2/middleware/recovery"
 	"github.com/go-kratos/kratos/v2/transport/grpc"
+	g "google.golang.org/grpc"
+	"google.golang.org/grpc/keepalive"
 )
 
 // NewGRPCServer new a gRPC server.
@@ -19,6 +21,10 @@ func NewGRPCServer(c *conf.Server, cs *service.ConfigService, ws *service.Warnin
 			),
 			logging.Server(logger),
 		),
+		grpc.Options(g.KeepaliveParams(keepalive.ServerParameters{
+			Time:    c.Grpc.KeepAliveTime.AsDuration(),
+			Timeout: c.Grpc.KeepAliveTimeout.AsDuration(),
+		})),
 	}
 	if c.Grpc.Network != "" {
 		opts = append(opts, grpc.Network(c.Grpc.Network))

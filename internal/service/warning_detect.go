@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	pb "gitee.com/moyusir/data-collection/api/dataCollection/v1"
 	"gitee.com/moyusir/data-collection/internal/biz"
 	"github.com/go-kratos/kratos/v2/errors"
@@ -50,7 +51,6 @@ func (s *WarningDetectService) CreateStateInfoSaveStream0(conn pb.WarningDetect_
 		} else {
 			clientID = id
 		}
-
 		// 将clientID存放到响应头中发送
 		md = metadata.New(map[string]string{CLIENT_ID_HEADER: clientID})
 		err = conn.SendHeader(md)
@@ -59,14 +59,6 @@ func (s *WarningDetectService) CreateStateInfoSaveStream0(conn pb.WarningDetect_
 			return errors.Newf(
 				500, "Service_State_Error", "发送grpc请求头时发生了错误:%v", err)
 		}
-	}
-
-	// 将clientID存放到响应头中发送
-	md = metadata.New(map[string]string{CLIENT_ID_HEADER: clientID})
-	// TODO 考虑错误处理
-	if err := conn.SendHeader(md); err != nil {
-		return errors.Newf(
-			500, "Service_State_Error", "发送grpc请求头时发生了错误:%v", err)
 	}
 
 	s.logger.Infof("与 %v 建立了传输设备状态信息的grpc流", clientID)
@@ -135,7 +127,6 @@ func (s *WarningDetectService) CreateStateInfoSaveStream1(conn pb.WarningDetect_
 		} else {
 			clientID = id
 		}
-
 		// 将clientID存放到响应头中发送
 		md = metadata.New(map[string]string{CLIENT_ID_HEADER: clientID})
 		err = conn.SendHeader(md)
@@ -146,42 +137,56 @@ func (s *WarningDetectService) CreateStateInfoSaveStream1(conn pb.WarningDetect_
 		}
 	}
 
-	// 将clientID存放到响应头中发送
-	md = metadata.New(map[string]string{CLIENT_ID_HEADER: clientID})
-	// TODO 考虑错误处理
-	if err := conn.SendHeader(md); err != nil {
-		return err
-	}
+	s.logger.Infof("与 %v 建立了传输设备状态信息的grpc流", clientID)
 
 	for {
-		state, err := conn.Recv()
-		if err == io.EOF {
+		var (
+			state *pb.DeviceState1
+			err   error
+		)
+		sendCtx, cancel := context.WithCancel(context.Background())
+		go func() {
+			defer cancel()
+			state, err = conn.Recv()
+		}()
+
+		select {
+		case <-conn.Context().Done():
+			s.logger.Infof("关闭了 %v 的传输设备状态信息的grpc流", clientID)
 			return nil
-		}
-		if err != nil {
-			return err
-		}
+		case <-sendCtx.Done():
+			if err == io.EOF {
+				s.logger.Infof("关闭了 %v 的传输设备状态信息的grpc流", clientID)
+				return nil
+			}
+			if err != nil {
+				return errors.Newf(
+					500, "Service_State_Error",
+					"接收用户 %v 传输的设备状态信息时发生了错误:%v", clientID, err)
+			}
+			// 提取设备状态信息进行路由激活以及保存
+			info := &biz.DeviceGeneralInfo{DeviceClassID: deviceClassID}
+			info.DeviceID = state.Id
+			// TODO 这里不应该使用反射去提取值，而是通过代码生成提取
+			fields["Voltage"] = state.Voltage
+			fields["Current"] = state.Current
 
-		// 提取设备状态信息进行路由激活以及保存
-		info := &biz.DeviceGeneralInfo{DeviceClassID: deviceClassID}
-		info.DeviceID = state.Id
-		// TODO 这里不应该使用反射去提取值，而是通过代码生成提取
-		fields["Voltage"] = state.Voltage
-		fields["Current"] = state.Current
+			// TODO 考虑路由激活以及保存设备状态出错时如何处理
+			err = s.updater.ConnectDeviceAndClientID(clientID, info)
+			if err != nil {
+				return err
+			}
+			err = s.uc.SaveDeviceState(info, state.Time.AsTime(), fields, tags)
+			if err != nil {
+				return err
+			}
 
-		// TODO 考虑路由激活以及保存设备状态出错时如何处理
-		err = s.updater.ConnectDeviceAndClientID(clientID, info)
-		if err != nil {
-			return err
-		}
-		err = s.uc.SaveDeviceState(info, state.Time.AsTime(), fields, tags)
-		if err != nil {
-			return err
-		}
-
-		err = conn.Send(&pb.WarningDetectServiceReply{Success: true})
-		if err != nil {
-			return err
+			err = conn.Send(&pb.WarningDetectServiceReply{Success: true})
+			if err != nil {
+				return errors.Newf(
+					500, "Service_State_Error",
+					"向用户 %v 发送传输设备状态的响应信息时发生了错误:%v", clientID, err)
+			}
 		}
 	}
 }

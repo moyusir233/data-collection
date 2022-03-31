@@ -22,6 +22,10 @@ message Server {
         string network = 1;
         string addr = 2;
         google.protobuf.Duration timeout = 3;
+        // 发出探测客户端连接是否断开的请求的时间间隔
+        google.protobuf.Duration keep_alive_time=4;
+        // 仍连接着的客户端对连接探测请求进行答复的最小延迟时间
+        google.protobuf.Duration keep_alive_timeout=5;
     }
     HTTP http = 1;
     GRPC grpc = 2;

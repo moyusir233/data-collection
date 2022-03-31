@@ -109,7 +109,7 @@ func (s *ConfigService) CreateConfigUpdateStream0(conn pb.Config_CreateConfigUpd
 	s.logger.Infof("与 %v 建立了传输配置更新信息的grpc流", clientID)
 
 	// 获得clientID对应的updateChannel
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(conn.Context())
 	updateChannel, err := s.updater.GetDeviceUpdateMsgChannel(ctx, clientID, new(pb.DeviceConfig0))
 	if err != nil {
 		return err
@@ -164,9 +164,9 @@ func (s *ConfigService) UpdateDeviceConfig0(ctx context.Context, req *pb.DeviceC
 	// 查询节点，将配置更新信息发送到相应channel中
 	err := s.updater.UpdateDeviceConfig(info, req)
 	if err != nil {
-		return nil, errors.New(400,
-			"无法找到设备对应的更新路由",
-			"请通过上传设备配置或者上传设备状态信息，建立了设备更新路由后再尝试发送配置更新请求",
+		return nil, errors.Newf(500,
+			"Service_Config_Error",
+			"更新设备配置时发生了未知错误:%v", err,
 		)
 	}
 
@@ -184,14 +184,20 @@ func (s *ConfigService) CreateInitialConfigSaveStream1(conn pb.Config_CreateInit
 	md, ok := metadata.FromIncomingContext(conn.Context())
 	if value := md.Get(CLIENT_ID_HEADER); ok && len(value) != 0 {
 		clientID = value[0]
+		s.logger.Infof("与 %v 建立了传输设备初始配置的grpc流", clientID)
+	} else {
+		s.logger.Info("与未知用户建立了传输设备初始配置的grpc流")
 	}
 
 	for {
 		config, err := conn.Recv()
 		if err == io.EOF {
+			s.logger.Infof("关闭了 %v 的传输设备初始配置的grpc流", clientID)
 			return conn.SendAndClose(&pb.ConfigServiceReply{Success: true})
 		} else if err != nil {
-			return err
+			return errors.Newf(
+				500, "Service_Config_Error",
+				"接收用户 %v 的初始设备配置信息时发生了错误:%v", clientID, err)
 		}
 
 		// 提取设备基本信息进行保存或路由的激活
@@ -244,8 +250,10 @@ func (s *ConfigService) CreateConfigUpdateStream1(conn pb.Config_CreateConfigUpd
 		}
 	}
 
+	s.logger.Infof("与 %v 建立了传输配置更新信息的grpc流", clientID)
+
 	// 获得clientID对应的updateChannel
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(conn.Context())
 	updateChannel, err := s.updater.GetDeviceUpdateMsgChannel(ctx, clientID, new(pb.DeviceConfig1))
 	if err != nil {
 		return err
@@ -300,9 +308,9 @@ func (s *ConfigService) UpdateDeviceConfig1(ctx context.Context, req *pb.DeviceC
 	// 查询节点，将配置更新信息发送到相应channel中
 	err := s.updater.UpdateDeviceConfig(info, req)
 	if err != nil {
-		return nil, errors.New(400,
-			"无法找到设备对应的更新路由",
-			"请通过上传设备配置或者上传设备状态信息，建立了设备更新路由后再尝试发送配置更新请求",
+		return nil, errors.Newf(500,
+			"Service_Config_Error",
+			"更新设备配置时发生了未知错误:%v", err,
 		)
 	}
 

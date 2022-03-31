@@ -9,13 +9,12 @@ import (
 	"github.com/golang/protobuf/proto"
 )
 
-// DeviceUpdateChannelsKey 保存设备和其更新channel对应关系的hash的key
-var DeviceUpdateChannelsKey = fmt.Sprintf("%s:device:update:channel", conf.Username)
-
 // DeviceConfigUpdater 负责接收和发送配置更新的消息
 type DeviceConfigUpdater struct {
 	pubSubClient UnionRepo
-	logger       *log.Helper
+	// DeviceUpdateChannelsKey 保存设备和其更新channel对应关系的hash的key
+	deviceUpdateChannelsKey string
+	logger                  *log.Helper
 }
 
 // PubSubClient 发布订阅的客户端
@@ -32,15 +31,17 @@ type PubSubClient interface {
 
 func NewDeviceConfigUpdater(repo UnionRepo, logger log.Logger) *DeviceConfigUpdater {
 	return &DeviceConfigUpdater{
-		pubSubClient: repo,
-		logger:       log.NewHelper(logger),
+		pubSubClient:            repo,
+		deviceUpdateChannelsKey: fmt.Sprintf("%s:device:update:channel", conf.Username),
+		logger:                  log.NewHelper(logger),
 	}
 }
 
 // UpdateDeviceConfig 更新设备的配置
 func (updater *DeviceConfigUpdater) UpdateDeviceConfig(info *DeviceGeneralInfo, config proto.Message) error {
 	deviceKey := GetDeviceKey(info)
-	updateChanName, err := updater.pubSubClient.GetValueOfField(DeviceUpdateChannelsKey, deviceKey)
+	updateChanName, err := updater.pubSubClient.GetValueOfField(
+		updater.deviceUpdateChannelsKey, deviceKey)
 	if err != nil {
 		return err
 	}
@@ -79,6 +80,7 @@ func (updater *DeviceConfigUpdater) GetDeviceUpdateMsgChannel(
 		for {
 			select {
 			case <-ctx.Done():
+				return
 			case msg := <-msgChannel:
 				// 将十六进制的字符串转换为二进制信息，并反序列化为proto message
 				// TODO 忽略反序列化失败的消息?
@@ -112,7 +114,7 @@ func (updater *DeviceConfigUpdater) ConnectDeviceAndClientID(clientID string, in
 	// 由于clientID即为clientID相应的channel的名称，因此直接
 	// 建立添加设备key和clientID的键值对即可
 	err := updater.pubSubClient.AddFieldValuePair(
-		DeviceUpdateChannelsKey, GetDeviceKey(info), clientID)
+		updater.deviceUpdateChannelsKey, GetDeviceKey(info), clientID)
 	if err != nil {
 		return err
 	}

@@ -24,11 +24,10 @@ func TestDataCollectionService(t *testing.T) {
 	//    (此时服务器会创建一个未注册的clientID进行路由信息的配置，因此对应clientID不存在，设备信息未注册的分支)
 	// 5. 测试不使用clientID建立设备传输连接,然后上传之前上传过的设备信息
 	//    (与上述情况类似，不过此时会为不存在的clientID复用之前的父节点，对应着clientID不存在，设备信息已注册的分支)
-	// 6. 测试路由自动注销功能
 
 	// 初始化测试所需环境变量
 	envs := map[string]string{
-		"USERNAME": "test",
+		"USERNAME": "init_bucket",
 	}
 	bootstrap, err := generalInit("", envs)
 	if err != nil {
@@ -106,16 +105,22 @@ func TestDataCollectionService(t *testing.T) {
 				stream.CloseSend()
 			})
 
-			// 从stream的响应头中提取本次建立数据流使用clientID
-			header, err := stream.Header()
-			if err != nil {
-				return nil, "", err
-			}
-			if tmp := header.Get(service.CLIENT_ID_HEADER); len(tmp) == 0 {
-				return nil, "", errors.New("can not find the header of clientID")
+			// 当传入的cid为空时，需要从响应头中获得服务器创建的clientID
+			if cid == "" {
+				// 从stream的响应头中提取本次建立数据流使用clientID
+				header, err := stream.Header()
+				if err != nil {
+					return nil, "", err
+				}
+				if tmp := header.Get(service.CLIENT_ID_HEADER); len(tmp) == 0 {
+					return nil, "", errors.New("can not find the header of clientID")
+				} else {
+					clientID = tmp[0]
+				}
 			} else {
-				clientID = tmp[0]
+				clientID = cid
 			}
+
 			return
 		}
 
@@ -422,6 +427,8 @@ func TestDataCollectionService(t *testing.T) {
 			Id:     "test3",
 			Status: false,
 		}
+
+		time.Sleep(time.Second)
 		err = sendUpdateConfigRequest(config)
 		if err != nil {
 			t.Error(err)
@@ -476,19 +483,18 @@ func TestDataCollectionService(t *testing.T) {
 			configs[i] = &v1.DeviceConfig1{Id: id}
 		}
 
-		// 等待组件注册
-		time.Sleep(time.Second)
-		if err := sendUpdateConfigRequest(configs...); err != nil {
-			t.Error(err)
-			return
-		}
-
 		updateStream, _, err := createConfigUpdateStream(t, clientID)
 		if err != nil {
 			t.Error(err)
 			return
 		}
 
+		// 等待组件注册
+		time.Sleep(time.Second)
+		if err := sendUpdateConfigRequest(configs...); err != nil {
+			t.Error(err)
+			return
+		}
 		// 检查更新流中接收到的配置更新消息与http发送的是否一致
 		if err := checkRecvConfig(updateStream, configs...); err != nil {
 			t.Error(err)

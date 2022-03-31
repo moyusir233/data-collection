@@ -29,7 +29,7 @@ func initApp(confServer *conf.Server, confData *conf.Data, logger log.Logger) (*
 		cleanup()
 		return nil, nil, err
 	}
-	unionRepo := data.NewRepo(redisData, influxdbData)
+	unionRepo := data.NewRepo(redisData, influxdbData, logger)
 	configUsecase := biz.NewConfigUsecase(unionRepo, logger)
 	deviceConfigUpdater := biz.NewDeviceConfigUpdater(unionRepo, logger)
 	configService, err := service.NewConfigService(configUsecase, deviceConfigUpdater, logger)
