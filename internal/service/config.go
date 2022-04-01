@@ -46,32 +46,47 @@ func (s *ConfigService) CreateInitialConfigSaveStream0(conn pb.Config_CreateInit
 	}
 
 	for {
-		config, err := conn.Recv()
-		if err == io.EOF {
+		var (
+			config *pb.DeviceConfig0
+			err    error
+		)
+		recvCtx, cancel := context.WithCancel(context.Background())
+		go func() {
+			defer cancel()
+			config, err = conn.Recv()
+		}()
+
+		select {
+		case <-conn.Context().Done():
 			s.logger.Infof("关闭了 %v 的传输设备初始配置的grpc流", clientID)
-			return conn.SendAndClose(&pb.ConfigServiceReply{Success: true})
-		} else if err != nil {
-			return errors.Newf(
-				500, "Service_Config_Error",
-				"接收用户 %v 的初始设备配置信息时发生了错误:%v", clientID, err)
-		}
+			return nil
+		case <-recvCtx.Done():
+			if err == io.EOF {
+				s.logger.Infof("关闭了 %v 的传输设备初始配置的grpc流", clientID)
+				return conn.SendAndClose(&pb.ConfigServiceReply{Success: true})
+			} else if err != nil {
+				return errors.Newf(
+					500, "Service_Config_Error",
+					"接收用户 %v 的初始设备配置信息时发生了错误:%v", clientID, err)
+			}
 
-		// 提取设备基本信息进行保存或路由的激活
-		info := &biz.DeviceGeneralInfo{DeviceClassID: deviceClassID}
-		info.DeviceID = config.Id
+			// 提取设备基本信息进行保存或路由的激活
+			info := &biz.DeviceGeneralInfo{DeviceClassID: deviceClassID}
+			info.DeviceID = config.Id
 
-		// 若clientID不为空，则建立关于该clientID的路由信息
-		// TODO 考虑错误处理
-		if clientID != "" {
-			err = s.updater.ConnectDeviceAndClientID(clientID, info)
-			if err != nil {
+			// 若clientID不为空，则建立关于该clientID的路由信息
+			// TODO 考虑错误处理
+			if clientID != "" {
+				err = s.updater.ConnectDeviceAndClientID(clientID, info)
+				if err != nil {
+					return err
+				}
+			}
+
+			// TODO 设备初始配置保存出错时如何处理，使用怎样的错误模型返回？
+			if err = s.uc.SaveDeviceConfig(info, config); err != nil {
 				return err
 			}
-		}
-
-		// TODO 设备初始配置保存出错时如何处理，使用怎样的错误模型返回？
-		if err = s.uc.SaveDeviceConfig(info, config); err != nil {
-			return err
 		}
 	}
 }
@@ -190,32 +205,47 @@ func (s *ConfigService) CreateInitialConfigSaveStream1(conn pb.Config_CreateInit
 	}
 
 	for {
-		config, err := conn.Recv()
-		if err == io.EOF {
+		var (
+			config *pb.DeviceConfig1
+			err    error
+		)
+		recvCtx, cancel := context.WithCancel(context.Background())
+		go func() {
+			defer cancel()
+			config, err = conn.Recv()
+		}()
+
+		select {
+		case <-conn.Context().Done():
 			s.logger.Infof("关闭了 %v 的传输设备初始配置的grpc流", clientID)
-			return conn.SendAndClose(&pb.ConfigServiceReply{Success: true})
-		} else if err != nil {
-			return errors.Newf(
-				500, "Service_Config_Error",
-				"接收用户 %v 的初始设备配置信息时发生了错误:%v", clientID, err)
-		}
+			return nil
+		case <-recvCtx.Done():
+			if err == io.EOF {
+				s.logger.Infof("关闭了 %v 的传输设备初始配置的grpc流", clientID)
+				return conn.SendAndClose(&pb.ConfigServiceReply{Success: true})
+			} else if err != nil {
+				return errors.Newf(
+					500, "Service_Config_Error",
+					"接收用户 %v 的初始设备配置信息时发生了错误:%v", clientID, err)
+			}
 
-		// 提取设备基本信息进行保存或路由的激活
-		info := &biz.DeviceGeneralInfo{DeviceClassID: deviceClassID}
-		info.DeviceID = config.Id
+			// 提取设备基本信息进行保存或路由的激活
+			info := &biz.DeviceGeneralInfo{DeviceClassID: deviceClassID}
+			info.DeviceID = config.Id
 
-		// 若clientID不为空，则建立关于该clientID的路由信息
-		// TODO 考虑错误处理
-		if clientID != "" {
-			err = s.updater.ConnectDeviceAndClientID(clientID, info)
-			if err != nil {
+			// 若clientID不为空，则建立关于该clientID的路由信息
+			// TODO 考虑错误处理
+			if clientID != "" {
+				err = s.updater.ConnectDeviceAndClientID(clientID, info)
+				if err != nil {
+					return err
+				}
+			}
+
+			// TODO 设备初始配置保存出错时如何处理，使用怎样的错误模型返回？
+			if err = s.uc.SaveDeviceConfig(info, config); err != nil {
 				return err
 			}
-		}
-
-		// TODO 设备初始配置保存出错时如何处理，使用怎样的错误模型返回？
-		if err = s.uc.SaveDeviceConfig(info, config); err != nil {
-			return err
 		}
 	}
 }
