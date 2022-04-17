@@ -21,10 +21,11 @@ func NewGRPCServer(c *conf.Server, cs *service.ConfigService, ws *service.Warnin
 			),
 			logging.Server(logger),
 		),
-		grpc.Options(g.KeepaliveParams(keepalive.ServerParameters{
-			Time:    c.Grpc.KeepAliveTime.AsDuration(),
-			Timeout: c.Grpc.KeepAliveTimeout.AsDuration(),
-		})),
+		grpc.Options(
+			g.KeepaliveParams(keepalive.ServerParameters{
+				MaxConnectionIdle: c.Grpc.MaxIdleTime.AsDuration(),
+			}),
+		),
 	}
 	if c.Grpc.Network != "" {
 		opts = append(opts, grpc.Network(c.Grpc.Network))

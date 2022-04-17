@@ -6,8 +6,7 @@ server:
   grpc:
     addr: 0.0.0.0:9000
     timeout: 60s
-    keepAliveTime: 60s
-    keepAliveTimeout: 30s
+    maxIdleTime: 300s
 data:
   redis:
     host: test-redis.test.svc.cluster.local
