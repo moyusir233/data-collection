@@ -45,6 +45,7 @@ func (r *Repo) SaveDeviceState(measurement *biz.DeviceStateMeasurement) error {
 	// 非时间的预警字段则作为measurement的tag保存进influxdb
 	// TODO 使用异步写入的api时如何进行错误处理？
 	writeAPI := r.influxdbClient.WriteAPI(r.influxdbClient.org, conf.Username)
+	defer writeAPI.Flush()
 
 	point := write.NewPointWithMeasurement(measurement.Name).SetTime(measurement.Time.UTC())
 	for k, v := range measurement.Tags {
