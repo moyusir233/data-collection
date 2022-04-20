@@ -3,7 +3,7 @@ package conf
 import (
 	"github.com/go-kratos/kratos/v2/config"
 	"github.com/go-kratos/kratos/v2/config/file"
-	"log"
+	"github.com/go-kratos/kratos/v2/log"
 	"os"
 )
 
@@ -13,20 +13,22 @@ var (
 	Username = "test"
 )
 
-func initEnv() {
+func initEnv(logger log.Logger) {
 	if username, ok := os.LookupEnv("USERNAME"); ok {
 		Username = username
 	} else {
-		log.Fatalln("The required environment variable USERNAME is missing")
+		logger.Log(log.LevelFatal, "msg", "The required environment variable USERNAME is missing")
+		os.Exit(1)
 	}
 }
-func LoadConfig(path string) (*Bootstrap, error) {
-	initEnv()
+func LoadConfig(path string, logger log.Logger) (*Bootstrap, error) {
+	initEnv(logger)
 
 	c := config.New(
 		config.WithSource(
 			file.NewSource(path),
 		),
+		config.WithLogger(logger),
 	)
 	defer c.Close()
 

@@ -58,7 +58,7 @@ func generalInit(path string, envs map[string]string) (*conf.Bootstrap, error) {
 	if path == "" {
 		path = "../../configs/config.yaml"
 	}
-	bc, err := conf.LoadConfig(path)
+	bc, err := conf.LoadConfig(path, log.DefaultLogger)
 	if err != nil {
 		return nil, err
 	}

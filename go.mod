@@ -11,7 +11,7 @@ require (
 )
 
 require (
-	gitee.com/moyusir/util v0.1.2
+	gitee.com/moyusir/util v1.1.0
 	github.com/golang/protobuf v1.5.2
 	github.com/influxdata/influxdb-client-go/v2 v2.8.1
 	google.golang.org/genproto v0.0.0-20211223182754-3ac035c7e7cb
@@ -21,6 +21,7 @@ require (
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/deepmap/oapi-codegen v1.8.2 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
+	github.com/envoyproxy/protoc-gen-validate v0.6.7 // indirect
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/go-playground/form/v4 v4.2.0 // indirect
 	github.com/google/uuid v1.3.0 // indirect
@@ -28,6 +29,9 @@ require (
 	github.com/imdario/mergo v0.3.12 // indirect
 	github.com/influxdata/line-protocol v0.0.0-20200327222509-2487e7298839 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
+	go.uber.org/atomic v1.7.0 // indirect
+	go.uber.org/multierr v1.6.0 // indirect
+	go.uber.org/zap v1.21.0 // indirect
 	golang.org/x/net v0.0.0-20220111093109-d55c255bac03 // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
 	golang.org/x/sys v0.0.0-20211216021012-1d35b9e2eb4e // indirect
