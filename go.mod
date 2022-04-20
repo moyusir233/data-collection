@@ -11,7 +11,7 @@ require (
 )
 
 require (
-	gitee.com/moyusir/util v1.1.0
+	gitee.com/moyusir/util v1.1.1
 	github.com/golang/protobuf v1.5.2
 	github.com/influxdata/influxdb-client-go/v2 v2.8.1
 	google.golang.org/genproto v0.0.0-20211223182754-3ac035c7e7cb
@@ -28,7 +28,9 @@ require (
 	github.com/gorilla/mux v1.8.0 // indirect
 	github.com/imdario/mergo v0.3.12 // indirect
 	github.com/influxdata/line-protocol v0.0.0-20200327222509-2487e7298839 // indirect
+	github.com/magefile/mage v1.9.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
+	go.elastic.co/ecszap v1.0.1-0.20210922110956-698ab8c60e81 // indirect
 	go.uber.org/atomic v1.7.0 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
 	go.uber.org/zap v1.21.0 // indirect

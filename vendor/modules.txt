@@ -1,4 +1,4 @@
-# gitee.com/moyusir/util v1.1.0
+# gitee.com/moyusir/util v1.1.1
 ## explicit; go 1.17
 gitee.com/moyusir/util/api/util/v1
 gitee.com/moyusir/util/logger
@@ -103,9 +103,16 @@ github.com/influxdata/influxdb-client-go/v2/log
 # github.com/influxdata/line-protocol v0.0.0-20200327222509-2487e7298839
 ## explicit; go 1.13
 github.com/influxdata/line-protocol
+# github.com/magefile/mage v1.9.0
+## explicit; go 1.12
+github.com/magefile/mage/mg
 # github.com/pkg/errors v0.9.1
 ## explicit
 github.com/pkg/errors
+# go.elastic.co/ecszap v1.0.1-0.20210922110956-698ab8c60e81
+## explicit; go 1.13
+go.elastic.co/ecszap
+go.elastic.co/ecszap/internal
 # go.uber.org/atomic v1.7.0
 ## explicit; go 1.13
 go.uber.org/atomic

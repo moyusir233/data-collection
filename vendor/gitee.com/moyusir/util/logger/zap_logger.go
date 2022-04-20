@@ -3,6 +3,7 @@ package logger
 import (
 	"fmt"
 	"github.com/go-kratos/kratos/v2/log"
+	"go.elastic.co/ecszap"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"os"
@@ -15,11 +16,9 @@ type Logger struct {
 }
 
 func NewJsonZapLoggerWarpper(serviceName string) *Logger {
-	zapLogger := zap.New(zapcore.NewCore(
-		zapcore.NewJSONEncoder(zap.NewProductionEncoderConfig()),
-		zapcore.Lock(os.Stdout),
-		zap.InfoLevel,
-	)).Named(serviceName)
+	encoderConfig := ecszap.NewDefaultEncoderConfig()
+	core := ecszap.NewCore(encoderConfig, os.Stdout, zapcore.InfoLevel)
+	zapLogger := zap.New(core).Named(serviceName)
 
 	return &Logger{
 		log: zapLogger,
