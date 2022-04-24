@@ -58,7 +58,7 @@ func (s *ConfigService) CreateInitialConfigSaveStream0(conn pb.Config_CreateInit
 
 		select {
 		case <-conn.Context().Done():
-			s.logger.Infof("关闭了 %v 的传输设备初始配置的grpc流", clientID)
+			s.logger.Infof("检测到了超时或闲置的连接,关闭了 %v 的传输设备初始配置的grpc流", clientID)
 			return nil
 		case <-recvCtx.Done():
 			if err == io.EOF {
@@ -217,7 +217,7 @@ func (s *ConfigService) CreateInitialConfigSaveStream1(conn pb.Config_CreateInit
 
 		select {
 		case <-conn.Context().Done():
-			s.logger.Infof("关闭了 %v 的传输设备初始配置的grpc流", clientID)
+			s.logger.Infof("检测到了超时或闲置的连接,关闭了 %v 的传输设备初始配置的grpc流", clientID)
 			return nil
 		case <-recvCtx.Done():
 			if err == io.EOF {

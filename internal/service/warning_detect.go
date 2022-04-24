@@ -76,7 +76,7 @@ func (s *WarningDetectService) CreateStateInfoSaveStream0(conn pb.WarningDetect_
 
 		select {
 		case <-conn.Context().Done():
-			s.logger.Infof("关闭了 %v 的传输设备状态信息的grpc流", clientID)
+			s.logger.Infof("检测到了超时或闲置的连接,关闭了 %v 的传输设备状态信息的grpc流", clientID)
 			return nil
 		case <-recvCtx.Done():
 			if err == io.EOF {
@@ -166,7 +166,7 @@ func (s *WarningDetectService) CreateStateInfoSaveStream1(conn pb.WarningDetect_
 
 		select {
 		case <-conn.Context().Done():
-			s.logger.Infof("关闭了 %v 的传输设备状态信息的grpc流", clientID)
+			s.logger.Infof("检测到了超时或闲置的连接,关闭了 %v 的传输设备状态信息的grpc流", clientID)
 			return nil
 		case <-recvCtx.Done():
 			if err == io.EOF {
