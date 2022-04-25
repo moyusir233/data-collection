@@ -11,7 +11,7 @@ require (
 )
 
 require (
-	gitee.com/moyusir/util v1.1.1
+	gitee.com/moyusir/util v1.1.2
 	github.com/golang/protobuf v1.5.2
 	github.com/influxdata/influxdb-client-go/v2 v2.8.1
 	google.golang.org/genproto v0.0.0-20211223182754-3ac035c7e7cb

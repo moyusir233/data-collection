@@ -1,4 +1,4 @@
-# gitee.com/moyusir/util v1.1.1
+# gitee.com/moyusir/util v1.1.2
 ## explicit; go 1.17
 gitee.com/moyusir/util/api/util/v1
 gitee.com/moyusir/util/logger

@@ -8,6 +8,7 @@ import (
 	"github.com/go-kratos/kratos/v2/errors"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/influxdata/influxdb-client-go/v2/api/write"
+	"time"
 )
 
 // Repo redis数据库操作对象，可以理解为dao
@@ -42,10 +43,8 @@ func (r *Repo) SaveDeviceState(measurement *biz.DeviceStateMeasurement) error {
 
 	// 设备的预警字段信息以influxdb measurement的形式，保存到用户id相应的bucket以及设备id相应的measurement
 	// 中，并以tag deviceClassID区分设备类别，各个字段的信息以field的形式保存在measurement的field中，
-	// 非时间的预警字段则作为measurement的tag保存进influxdb
-	// TODO 使用异步写入的api时如何进行错误处理？
-	writeAPI := r.influxdbClient.WriteAPI(r.influxdbClient.org, conf.Username)
-	defer writeAPI.Flush()
+	// 非时间、非id且非预警的字段则作为measurement的tag保存进influxdb
+	writeAPI := r.influxdbClient.WriteAPIBlocking(r.influxdbClient.org, conf.Username)
 
 	point := write.NewPointWithMeasurement(measurement.Name).SetTime(measurement.Time.UTC())
 	for k, v := range measurement.Tags {
@@ -55,8 +54,22 @@ func (r *Repo) SaveDeviceState(measurement *biz.DeviceStateMeasurement) error {
 		point.AddField(k, v)
 	}
 	point.SortFields().SortTags()
-	r.redisClient.Subscribe(context.Background()).Channel()
-	writeAPI.WritePoint(point)
+
+	err := writeAPI.WritePoint(context.Background(), point)
+	if err != nil {
+		return errors.Newf(
+			500, "Repo_State_Error", "设备状态保存时发生了错误:%v", err)
+	}
+
+	{
+		now := time.Now().UTC()
+		r.logger.Debugf(
+			"与时间:%s保存了时间信息为:%s的设备状态信息,时间差为:%s",
+			now.Format(time.RFC3339), measurement.Time.UTC().Format(time.RFC3339),
+			now.Sub(measurement.Time.UTC()).String(),
+		)
+	}
+
 	return nil
 }
 

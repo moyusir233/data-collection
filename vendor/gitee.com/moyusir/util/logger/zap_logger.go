@@ -2,6 +2,7 @@ package logger
 
 import (
 	"fmt"
+	v1 "gitee.com/moyusir/util/api/util/v1"
 	"github.com/go-kratos/kratos/v2/log"
 	"go.elastic.co/ecszap"
 	"go.uber.org/zap"
@@ -15,9 +16,10 @@ type Logger struct {
 	log *zap.Logger
 }
 
-func NewJsonZapLoggerWarpper(serviceName string) *Logger {
+func NewJsonZapLoggerWarpper(serviceName string, level v1.LogLevel) *Logger {
 	encoderConfig := ecszap.NewDefaultEncoderConfig()
-	core := ecszap.NewCore(encoderConfig, os.Stdout, zapcore.InfoLevel)
+	// 由于protobuf枚举的最小值为0，而zap logger level的最小值为-1，因此需要减一进行偏移
+	core := ecszap.NewCore(encoderConfig, os.Stdout, zapcore.Level(level-1))
 	zapLogger := zap.New(core).Named(serviceName)
 
 	return &Logger{

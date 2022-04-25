@@ -145,6 +145,75 @@ func (Type) EnumDescriptor() ([]byte, []int) {
 	return file_api_util_v1_general_proto_rawDescGZIP(), []int{1}
 }
 
+// 日志级别
+type LogLevel int32
+
+const (
+	// 调试
+	LogLevel_DEBUG LogLevel = 0
+	// 信息
+	LogLevel_INFO LogLevel = 1
+	// 警告
+	LogLevel_WARNING LogLevel = 2
+	// 错误
+	LogLevel_ERROR LogLevel = 3
+	// 在dev环境下，该日志级别打印后会触发panic
+	LogLevel_DEV_PANIC LogLevel = 4
+	// panic
+	LogLevel_PANIC LogLevel = 5
+	// 致命错误
+	LogLevel_FATAL LogLevel = 6
+)
+
+// Enum value maps for LogLevel.
+var (
+	LogLevel_name = map[int32]string{
+		0: "DEBUG",
+		1: "INFO",
+		2: "WARNING",
+		3: "ERROR",
+		4: "DEV_PANIC",
+		5: "PANIC",
+		6: "FATAL",
+	}
+	LogLevel_value = map[string]int32{
+		"DEBUG":     0,
+		"INFO":      1,
+		"WARNING":   2,
+		"ERROR":     3,
+		"DEV_PANIC": 4,
+		"PANIC":     5,
+		"FATAL":     6,
+	}
+)
+
+func (x LogLevel) Enum() *LogLevel {
+	p := new(LogLevel)
+	*p = x
+	return p
+}
+
+func (x LogLevel) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (LogLevel) Descriptor() protoreflect.EnumDescriptor {
+	return file_api_util_v1_general_proto_enumTypes[2].Descriptor()
+}
+
+func (LogLevel) Type() protoreflect.EnumType {
+	return &file_api_util_v1_general_proto_enumTypes[2]
+}
+
+func (x LogLevel) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use LogLevel.Descriptor instead.
+func (LogLevel) EnumDescriptor() ([]byte, []int) {
+	return file_api_util_v1_general_proto_rawDescGZIP(), []int{2}
+}
+
 // 预警比较方法，用于预警检测时的判断
 type DeviceStateRegisterInfo_Cmp int32
 
@@ -182,11 +251,11 @@ func (x DeviceStateRegisterInfo_Cmp) String() string {
 }
 
 func (DeviceStateRegisterInfo_Cmp) Descriptor() protoreflect.EnumDescriptor {
-	return file_api_util_v1_general_proto_enumTypes[2].Descriptor()
+	return file_api_util_v1_general_proto_enumTypes[3].Descriptor()
 }
 
 func (DeviceStateRegisterInfo_Cmp) Type() protoreflect.EnumType {
-	return &file_api_util_v1_general_proto_enumTypes[2]
+	return &file_api_util_v1_general_proto_enumTypes[3]
 }
 
 func (x DeviceStateRegisterInfo_Cmp) Number() protoreflect.EnumNumber {
@@ -243,11 +312,11 @@ func (x DeviceStateRegisterInfo_AggregationOperation) String() string {
 }
 
 func (DeviceStateRegisterInfo_AggregationOperation) Descriptor() protoreflect.EnumDescriptor {
-	return file_api_util_v1_general_proto_enumTypes[3].Descriptor()
+	return file_api_util_v1_general_proto_enumTypes[4].Descriptor()
 }
 
 func (DeviceStateRegisterInfo_AggregationOperation) Type() protoreflect.EnumType {
-	return &file_api_util_v1_general_proto_enumTypes[3]
+	return &file_api_util_v1_general_proto_enumTypes[4]
 }
 
 func (x DeviceStateRegisterInfo_AggregationOperation) Number() protoreflect.EnumNumber {
@@ -1033,11 +1102,17 @@ var file_api_util_v1_general_proto_rawDesc = []byte{
 	0x0a, 0x0a, 0x06, 0x55, 0x49, 0x4e, 0x54, 0x36, 0x34, 0x10, 0x04, 0x12, 0x08, 0x0a, 0x04, 0x42,
 	0x4f, 0x4f, 0x4c, 0x10, 0x05, 0x12, 0x0a, 0x0a, 0x06, 0x53, 0x54, 0x52, 0x49, 0x4e, 0x47, 0x10,
 	0x06, 0x12, 0x08, 0x0a, 0x04, 0x42, 0x59, 0x54, 0x45, 0x10, 0x07, 0x12, 0x0d, 0x0a, 0x09, 0x54,
-	0x49, 0x4d, 0x45, 0x53, 0x54, 0x41, 0x4d, 0x50, 0x10, 0x08, 0x42, 0x36, 0x0a, 0x0b, 0x61, 0x70,
-	0x69, 0x2e, 0x75, 0x74, 0x69, 0x6c, 0x2e, 0x76, 0x31, 0x50, 0x01, 0x5a, 0x25, 0x67, 0x69, 0x74,
-	0x65, 0x65, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x6d, 0x6f, 0x79, 0x75, 0x73, 0x69, 0x72, 0x2f, 0x75,
-	0x74, 0x69, 0x6c, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x75, 0x74, 0x69, 0x6c, 0x2f, 0x76, 0x31, 0x3b,
-	0x76, 0x31, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x49, 0x4d, 0x45, 0x53, 0x54, 0x41, 0x4d, 0x50, 0x10, 0x08, 0x2a, 0x5c, 0x0a, 0x08, 0x4c, 0x6f,
+	0x67, 0x4c, 0x65, 0x76, 0x65, 0x6c, 0x12, 0x09, 0x0a, 0x05, 0x44, 0x45, 0x42, 0x55, 0x47, 0x10,
+	0x00, 0x12, 0x08, 0x0a, 0x04, 0x49, 0x4e, 0x46, 0x4f, 0x10, 0x01, 0x12, 0x0b, 0x0a, 0x07, 0x57,
+	0x41, 0x52, 0x4e, 0x49, 0x4e, 0x47, 0x10, 0x02, 0x12, 0x09, 0x0a, 0x05, 0x45, 0x52, 0x52, 0x4f,
+	0x52, 0x10, 0x03, 0x12, 0x0d, 0x0a, 0x09, 0x44, 0x45, 0x56, 0x5f, 0x50, 0x41, 0x4e, 0x49, 0x43,
+	0x10, 0x04, 0x12, 0x09, 0x0a, 0x05, 0x50, 0x41, 0x4e, 0x49, 0x43, 0x10, 0x05, 0x12, 0x09, 0x0a,
+	0x05, 0x46, 0x41, 0x54, 0x41, 0x4c, 0x10, 0x06, 0x42, 0x36, 0x0a, 0x0b, 0x61, 0x70, 0x69, 0x2e,
+	0x75, 0x74, 0x69, 0x6c, 0x2e, 0x76, 0x31, 0x50, 0x01, 0x5a, 0x25, 0x67, 0x69, 0x74, 0x65, 0x65,
+	0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x6d, 0x6f, 0x79, 0x75, 0x73, 0x69, 0x72, 0x2f, 0x75, 0x74, 0x69,
+	0x6c, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x75, 0x74, 0x69, 0x6c, 0x2f, 0x76, 0x31, 0x3b, 0x76, 0x31,
+	0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -1052,39 +1127,40 @@ func file_api_util_v1_general_proto_rawDescGZIP() []byte {
 	return file_api_util_v1_general_proto_rawDescData
 }
 
-var file_api_util_v1_general_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
+var file_api_util_v1_general_proto_enumTypes = make([]protoimpl.EnumInfo, 5)
 var file_api_util_v1_general_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
 var file_api_util_v1_general_proto_goTypes = []interface{}{
 	(ErrorReason)(0),                 // 0: api.util.v1.ErrorReason
 	(Type)(0),                        // 1: api.util.v1.Type
-	(DeviceStateRegisterInfo_Cmp)(0), // 2: api.util.v1.DeviceStateRegisterInfo.Cmp
-	(DeviceStateRegisterInfo_AggregationOperation)(0), // 3: api.util.v1.DeviceStateRegisterInfo.AggregationOperation
-	(*User)(nil),                                // 4: api.util.v1.User
-	(*DeviceConfigRegisterInfo)(nil),            // 5: api.util.v1.DeviceConfigRegisterInfo
-	(*DeviceStateRegisterInfo)(nil),             // 6: api.util.v1.DeviceStateRegisterInfo
-	(*Warning)(nil),                             // 7: api.util.v1.Warning
-	(*TestedDeviceConfig)(nil),                  // 8: api.util.v1.TestedDeviceConfig
-	(*TestedDeviceState)(nil),                   // 9: api.util.v1.TestedDeviceState
-	(*DeviceConfigRegisterInfo_Field)(nil),      // 10: api.util.v1.DeviceConfigRegisterInfo.Field
-	(*DeviceStateRegisterInfo_CmpRule)(nil),     // 11: api.util.v1.DeviceStateRegisterInfo.CmpRule
-	(*DeviceStateRegisterInfo_WarningRule)(nil), // 12: api.util.v1.DeviceStateRegisterInfo.WarningRule
-	(*DeviceStateRegisterInfo_Field)(nil),       // 13: api.util.v1.DeviceStateRegisterInfo.Field
-	(*timestamppb.Timestamp)(nil),               // 14: google.protobuf.Timestamp
-	(*durationpb.Duration)(nil),                 // 15: google.protobuf.Duration
+	(LogLevel)(0),                    // 2: api.util.v1.LogLevel
+	(DeviceStateRegisterInfo_Cmp)(0), // 3: api.util.v1.DeviceStateRegisterInfo.Cmp
+	(DeviceStateRegisterInfo_AggregationOperation)(0), // 4: api.util.v1.DeviceStateRegisterInfo.AggregationOperation
+	(*User)(nil),                                // 5: api.util.v1.User
+	(*DeviceConfigRegisterInfo)(nil),            // 6: api.util.v1.DeviceConfigRegisterInfo
+	(*DeviceStateRegisterInfo)(nil),             // 7: api.util.v1.DeviceStateRegisterInfo
+	(*Warning)(nil),                             // 8: api.util.v1.Warning
+	(*TestedDeviceConfig)(nil),                  // 9: api.util.v1.TestedDeviceConfig
+	(*TestedDeviceState)(nil),                   // 10: api.util.v1.TestedDeviceState
+	(*DeviceConfigRegisterInfo_Field)(nil),      // 11: api.util.v1.DeviceConfigRegisterInfo.Field
+	(*DeviceStateRegisterInfo_CmpRule)(nil),     // 12: api.util.v1.DeviceStateRegisterInfo.CmpRule
+	(*DeviceStateRegisterInfo_WarningRule)(nil), // 13: api.util.v1.DeviceStateRegisterInfo.WarningRule
+	(*DeviceStateRegisterInfo_Field)(nil),       // 14: api.util.v1.DeviceStateRegisterInfo.Field
+	(*timestamppb.Timestamp)(nil),               // 15: google.protobuf.Timestamp
+	(*durationpb.Duration)(nil),                 // 16: google.protobuf.Duration
 }
 var file_api_util_v1_general_proto_depIdxs = []int32{
-	10, // 0: api.util.v1.DeviceConfigRegisterInfo.fields:type_name -> api.util.v1.DeviceConfigRegisterInfo.Field
-	13, // 1: api.util.v1.DeviceStateRegisterInfo.fields:type_name -> api.util.v1.DeviceStateRegisterInfo.Field
-	14, // 2: api.util.v1.Warning.start:type_name -> google.protobuf.Timestamp
-	14, // 3: api.util.v1.Warning.end:type_name -> google.protobuf.Timestamp
-	14, // 4: api.util.v1.TestedDeviceState.time:type_name -> google.protobuf.Timestamp
+	11, // 0: api.util.v1.DeviceConfigRegisterInfo.fields:type_name -> api.util.v1.DeviceConfigRegisterInfo.Field
+	14, // 1: api.util.v1.DeviceStateRegisterInfo.fields:type_name -> api.util.v1.DeviceStateRegisterInfo.Field
+	15, // 2: api.util.v1.Warning.start:type_name -> google.protobuf.Timestamp
+	15, // 3: api.util.v1.Warning.end:type_name -> google.protobuf.Timestamp
+	15, // 4: api.util.v1.TestedDeviceState.time:type_name -> google.protobuf.Timestamp
 	1,  // 5: api.util.v1.DeviceConfigRegisterInfo.Field.type:type_name -> api.util.v1.Type
-	2,  // 6: api.util.v1.DeviceStateRegisterInfo.CmpRule.cmp:type_name -> api.util.v1.DeviceStateRegisterInfo.Cmp
-	11, // 7: api.util.v1.DeviceStateRegisterInfo.WarningRule.cmp_rule:type_name -> api.util.v1.DeviceStateRegisterInfo.CmpRule
-	3,  // 8: api.util.v1.DeviceStateRegisterInfo.WarningRule.aggregation_operation:type_name -> api.util.v1.DeviceStateRegisterInfo.AggregationOperation
-	15, // 9: api.util.v1.DeviceStateRegisterInfo.WarningRule.duration:type_name -> google.protobuf.Duration
+	3,  // 6: api.util.v1.DeviceStateRegisterInfo.CmpRule.cmp:type_name -> api.util.v1.DeviceStateRegisterInfo.Cmp
+	12, // 7: api.util.v1.DeviceStateRegisterInfo.WarningRule.cmp_rule:type_name -> api.util.v1.DeviceStateRegisterInfo.CmpRule
+	4,  // 8: api.util.v1.DeviceStateRegisterInfo.WarningRule.aggregation_operation:type_name -> api.util.v1.DeviceStateRegisterInfo.AggregationOperation
+	16, // 9: api.util.v1.DeviceStateRegisterInfo.WarningRule.duration:type_name -> google.protobuf.Duration
 	1,  // 10: api.util.v1.DeviceStateRegisterInfo.Field.type:type_name -> api.util.v1.Type
-	12, // 11: api.util.v1.DeviceStateRegisterInfo.Field.warning_rule:type_name -> api.util.v1.DeviceStateRegisterInfo.WarningRule
+	13, // 11: api.util.v1.DeviceStateRegisterInfo.Field.warning_rule:type_name -> api.util.v1.DeviceStateRegisterInfo.WarningRule
 	12, // [12:12] is the sub-list for method output_type
 	12, // [12:12] is the sub-list for method input_type
 	12, // [12:12] is the sub-list for extension type_name
@@ -1224,7 +1300,7 @@ func file_api_util_v1_general_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_api_util_v1_general_proto_rawDesc,
-			NumEnums:      4,
+			NumEnums:      5,
 			NumMessages:   10,
 			NumExtensions: 0,
 			NumServices:   0,

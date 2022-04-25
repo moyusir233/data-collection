@@ -1,7 +1,7 @@
 cloud.google.com/go v0.26.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMTw=
 cloud.google.com/go v0.34.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMTw=
-gitee.com/moyusir/util v1.1.1 h1:iSrqlqyPNTqkh2NuTUAS24wWkgTca7fDhkuMHdpTguQ=
-gitee.com/moyusir/util v1.1.1/go.mod h1:ObMGEZ2R0RbpS8/pMzmuumqwkNBXb0SPynSGdO9GcB4=
+gitee.com/moyusir/util v1.1.2 h1:b5FSebfwHoL1D6/9mdcj0beCWNm9JjmvcX7BZuUtigk=
+gitee.com/moyusir/util v1.1.2/go.mod h1:ObMGEZ2R0RbpS8/pMzmuumqwkNBXb0SPynSGdO9GcB4=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/OneOfOne/xxhash v1.2.2/go.mod h1:HSdplMjZKSmBqAxg5vPj2TmRDmfkzw+cTzAElWljhcU=
 github.com/StackExchange/wmi v1.2.1/go.mod h1:rcmrprowKIVzvc+NUiLncP2uuArMWLCbu9SBzvHz7e8=
